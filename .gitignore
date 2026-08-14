@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+client/dist/
+server/dist/
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# Pulumi state
+infrastructure/pulumi/.pulumi/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/
+*.swp

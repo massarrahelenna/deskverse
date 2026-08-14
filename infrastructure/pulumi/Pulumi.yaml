@@ -1,0 +1,3 @@
+name: deskverse
+runtime: rust
+description: DeskVerse — AWS infrastructure (ECR, ECS Fargate, S3, CloudFront, ALB)

@@ -1,0 +1,7 @@
+config:
+  aws:region: us-east-1
+  deskverse:domainName: deskverse.example.com
+  deskverse:serverPort: "4000"
+  deskverse:desiredCount: "2"
+  deskverse:serverCpu: "512"
+  deskverse:serverMemory: "1024"

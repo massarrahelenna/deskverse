@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: deskverse
+      POSTGRES_PASSWORD: deskverse
+      POSTGRES_DB: deskverse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deskverse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: ./server
+      dockerfile: ../infrastructure/docker/Dockerfile.server
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - HOST=0.0.0.0
+      - CORS_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgres://deskverse:deskverse@postgres:5432/deskverse
+      - JWT_SECRET=deskverse-dev-secret-change-in-production
+      - SERVER_URL=http://localhost:4000
+      - CLIENT_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  client:
+    build:
+      context: ./client
+      dockerfile: ../infrastructure/docker/Dockerfile.client
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client:/app
+      - ./shared:/shared
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: deskverse-network

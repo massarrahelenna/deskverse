@@ -1,0 +1,16 @@
+export const TILE_SIZE = 32;
+export const WORLD_W = 960;  // 30 tiles × 32px
+export const WORLD_H = 640;  // 20 tiles × 32px
+export const PLAYER_SPEED = 160;
+export const PLAYER_MOVE_THROTTLE_MS = 50;
+export const PROXIMITY_RADIUS = 80;
+export const PROXIMITY_HYSTERESIS_MS = 1000;
+export const ABSENCE_TIMEOUT_MS = 10 * 60 * 1000;
+export const INVITE_TIMEOUT_MS = 30 * 1000;
+export const ZONE_JOIN_COUNTDOWN_MS = 3000;
+export const RECONNECT_DELAY_MS = 3000;
+export const INTERPOLATION_MS = 120;
+export const MAP_COLLISION_LAYER = "Collision";
+export const ZONE_ID_MEETING = "sala-ipe";
+export const ZONE_ID_FOCUS = "foco";
+export const WS_PATH = "/ws";

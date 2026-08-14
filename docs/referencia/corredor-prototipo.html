@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Corredor — protótipo de escritório virtual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#5B3417;
+    --wood:#8B5A2B;
+    --wood-lite:#C89A5B;
+    --parch:#F5E2B8;
+    --parch-2:#E9D0A0;
+    --ink:#4A2E12;
+    --ink-soft:#7A5936;
+    --green:#3F7D3A;
+    --amber:#D98F32;
+    --red:#B34A34;
+    --blue:#3F6EA8;
+    --violet:#6E4E9E;
+    --grass:#6DA34D;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--grass)}
+  body{
+    font-family:"Pixelify Sans", ui-monospace, "Courier New", monospace;
+    color:var(--ink);-webkit-font-smoothing:none;
+  }
+  .stage{position:fixed;inset:0;display:grid;place-items:center}
+  canvas{
+    display:block;width:min(100vw, calc(100vh * 1.4419));height:auto;
+    image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;
+  }
+
+  /* ---------- moldura de madeira ---------- */
+  .frame{
+    background:var(--parch);
+    border:4px solid var(--wood-dark);
+    box-shadow:
+      inset 0 0 0 4px var(--wood-lite),
+      inset 0 0 0 8px var(--parch),
+      3px 3px 0 rgba(45,25,10,.35);
+    color:var(--ink);
+  }
+
+  /* ---------- botoes do topo ---------- */
+  .iconbtn{
+    width:46px;height:46px;padding:0;display:grid;place-items:center;cursor:pointer;
+    background:var(--parch-2);border:3px solid var(--wood-dark);
+    box-shadow:inset 0 0 0 3px var(--wood-lite), 2px 2px 0 rgba(45,25,10,.35);
+    color:var(--ink);
+  }
+  .iconbtn:hover{background:#F7EBCB}
+  .iconbtn:active{transform:translate(1px,1px);box-shadow:inset 0 0 0 3px var(--wood-lite), 1px 1px 0 rgba(45,25,10,.35)}
+  .iconbtn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .iconbtn.off{background:#E3B3A6}
+  .iconbtn svg{width:22px;height:22px;display:block}
+
+  .tl{position:absolute;top:14px;left:14px;display:flex;gap:8px;z-index:6}
+  .toolbar{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:6}
+  .tr{position:absolute;top:14px;right:14px;display:flex;gap:8px;align-items:stretch;z-index:6}
+
+  .woodbtn{
+    font-family:inherit;font-size:15px;color:var(--ink);cursor:pointer;padding:0 14px;height:46px;
+    background:var(--parch-2);border:3px solid var(--wood-dark);
+    box-shadow:inset 0 0 0 3px var(--wood-lite), 2px 2px 0 rgba(45,25,10,.35);
+  }
+  .woodbtn:hover{background:#F7EBCB}
+  .woodbtn:active{transform:translate(1px,1px)}
+  .woodbtn.danger{background:#E3B3A6}
+
+  .me{display:flex;align-items:center;gap:9px;height:46px;padding:0 14px 0 8px;
+      background:var(--parch-2);border:3px solid var(--wood-dark);
+      box-shadow:inset 0 0 0 3px var(--wood-lite), 2px 2px 0 rgba(45,25,10,.35)}
+  .me .ava{width:28px;height:28px;background:var(--amber);border:2px solid var(--wood-dark);display:grid;place-items:center;font-size:14px;font-weight:700;color:#3B240E}
+  .me .nm{display:flex;flex-direction:column;line-height:1.15;font-size:15px}
+  .me .nm small{font-size:12px;color:var(--green)}
+
+  /* ---------- paineis ---------- */
+  .rail{position:absolute;left:14px;top:70px;width:294px;z-index:5;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 90px)}
+  .panel{width:100%;overflow:hidden}
+  .panel.hide{display:none}
+  .panel h3{
+    margin:-8px -8px 0;padding:7px 12px;background:var(--wood);color:#FBEFD2;
+    font-size:14px;font-weight:400;letter-spacing:.04em;display:flex;justify-content:space-between;
+    border-bottom:3px solid var(--wood-dark);
+  }
+  .panel h3 span{color:#E9C88E;font-size:12px}
+  .panel .body{padding:6px 4px}
+
+  .roster{list-style:none;margin:0;padding:0;max-height:296px;overflow-y:auto}
+  .roster li{display:flex;align-items:center;gap:8px;padding:5px 7px;border-bottom:2px dotted rgba(122,89,54,.35)}
+  .roster li:last-child{border-bottom:none}
+  .roster li.near{background:rgba(217,143,50,.20)}
+  .av{width:24px;height:24px;flex:0 0 auto;border:2px solid var(--wood-dark);display:grid;place-items:center;font-size:12px;font-weight:700;color:#3B240E}
+  .who{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+  .who b{font-weight:500;font-size:15px}
+  .who small{color:var(--ink-soft);font-size:12px}
+  .st{margin-left:auto;font-size:12px;padding:1px 7px;border:2px solid rgba(91,52,23,.45);white-space:nowrap}
+
+  .log{margin:0;padding:4px 6px;height:172px;overflow-y:auto;font-size:13px;line-height:1.5;
+       display:flex;flex-direction:column-reverse;gap:6px;color:var(--ink-soft)}
+  .log .ev b{color:var(--ink);font-weight:600}
+  .log .ev i{font-style:normal;color:var(--green);font-weight:600}
+  .log .ev u{text-decoration:none;color:#9A5B12;font-weight:600}
+  .log .t{opacity:.55;margin-right:5px}
+
+  #panelInfo{position:absolute;right:14px;top:70px;width:322px;z-index:5;padding:14px 16px;font-size:14.5px;line-height:1.5}
+  #panelInfo p{margin:0 0 10px}
+  #panelInfo p:last-child{margin:0}
+  #panelInfo b{font-weight:700}
+
+  /* ---------- HUD de chamada ---------- */
+  .callhud{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:7;
+           padding:10px 12px;display:none;align-items:center;gap:12px;max-width:min(94vw,760px);flex-wrap:wrap}
+  .callhud.on{display:flex}
+  .tiles{display:flex;gap:6px}
+  .tile{width:44px;height:34px;display:grid;place-items:center;font-size:16px;font-weight:700;color:#3B240E;
+        border:3px solid var(--wood-dark);position:relative}
+  .tile::after{content:"";position:absolute;bottom:2px;right:2px;width:6px;height:6px;background:var(--green);border:1px solid rgba(0,0,0,.4)}
+  .ct{display:flex;flex-direction:column;line-height:1.2}
+  .ct b{font-size:16px;font-weight:600}
+  .ct small{font-size:12.5px;color:var(--ink-soft)}
+  .live{width:12px;height:12px;background:var(--green);border:2px solid var(--wood-dark)}
+  .live.ring{background:var(--amber);animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.25}}
+
+  /* ---------- dica / toast / intro ---------- */
+  .hint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:6;
+        padding:8px 14px;font-size:15px;display:none;align-items:center;gap:10px;white-space:nowrap}
+  .hint.on{display:flex}
+  .hint.low{bottom:88px}
+  .key{font-size:13px;background:var(--wood);color:#FBEFD2;border:2px solid var(--wood-dark);padding:1px 7px}
+  .hint.off{color:var(--ink-soft)}
+  .hint.off .key{background:#A98B68}
+
+  .toast{position:absolute;left:50%;bottom:96px;transform:translate(-50%,8px);z-index:8;
+         padding:10px 14px;font-size:14px;opacity:0;transition:opacity .2s,transform .2s;
+         pointer-events:none;max-width:80vw;text-align:center}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  .intro{position:absolute;inset:0;z-index:9;display:grid;place-items:center;background:rgba(40,26,12,.45);transition:opacity .35s}
+  .intro>div{max-width:470px;text-align:center;padding:20px 24px}
+  .intro h2{margin:0 0 8px;font-size:24px;font-weight:700}
+  .intro p{margin:0;font-size:15.5px;line-height:1.55;color:var(--ink-soft)}
+  .intro b{color:var(--ink);font-weight:700}
+  .intro.gone{opacity:0;pointer-events:none}
+
+  /* ---------- touch ---------- */
+  .pad{position:absolute;left:14px;bottom:14px;z-index:7;display:none;flex-direction:column;gap:4px;align-items:center}
+  .pad .row{display:flex;gap:4px}
+  .pad button{width:50px;height:50px;font-size:16px;font-family:inherit;cursor:pointer;
+    background:var(--parch-2);border:3px solid var(--wood-dark);box-shadow:inset 0 0 0 3px var(--wood-lite);color:var(--ink)}
+  .act{position:absolute;right:14px;bottom:14px;z-index:7;display:none}
+  .act button{width:64px;height:64px;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;
+    background:var(--amber);border:3px solid var(--wood-dark);box-shadow:inset 0 0 0 3px #F2C079;color:#3B240E}
+  body.touch .pad,body.touch .act{display:flex}
+  body.touch .rail{display:none}
+
+  @media (max-width:860px){.rail,#panelInfo,.tr .woodbtn{display:none}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="game" width="1240" height="860" aria-label="Escritório virtual"></canvas>
+
+  <div class="tl">
+    <button class="iconbtn" id="btnInfo" title="Sobre este protótipo" aria-label="Sobre este protótipo">
+      <svg viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="4" y="1" width="3" height="2"/><rect x="4" y="4" width="3" height="6"/><rect x="2" y="8" width="7" height="2"/><rect x="2" y="4" width="2" height="2"/>
+      </svg>
+    </button>
+    <button class="iconbtn" id="btnPeople" title="Quem está no andar" aria-label="Quem está no andar">
+      <svg viewBox="0 0 13 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="2" y="1" width="3" height="3"/><rect x="1" y="5" width="5" height="5"/>
+        <rect x="8" y="2" width="3" height="3"/><rect x="7" y="6" width="5" height="4"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <button class="iconbtn" id="btnEmoji" title="Reagir" aria-label="Reagir">
+      <svg viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="3" y="0" width="5" height="1"/><rect x="1" y="1" width="2" height="1"/><rect x="8" y="1" width="2" height="1"/>
+        <rect x="0" y="2" width="1" height="5"/><rect x="10" y="2" width="1" height="5"/>
+        <rect x="1" y="7" width="2" height="1"/><rect x="8" y="7" width="2" height="1"/><rect x="3" y="8" width="5" height="1"/>
+        <rect x="3" y="3" width="1" height="2"/><rect x="7" y="3" width="1" height="2"/>
+        <rect x="3" y="6" width="5" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/>
+      </svg>
+    </button>
+    <button class="iconbtn" id="btnGrid" title="Registro de integrações" aria-label="Registro de integrações">
+      <svg viewBox="0 0 11 11" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="1" y="1" width="4" height="4"/><rect x="6" y="1" width="4" height="4"/>
+        <rect x="1" y="6" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/>
+      </svg>
+    </button>
+    <button class="iconbtn" id="btnMic" title="Microfone" aria-label="Microfone">
+      <svg viewBox="0 0 11 12" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="4" y="1" width="3" height="6"/><rect x="2" y="5" width="1" height="2"/><rect x="8" y="5" width="1" height="2"/>
+        <rect x="3" y="7" width="5" height="1"/><rect x="5" y="8" width="1" height="2"/><rect x="3" y="10" width="5" height="1"/>
+      </svg>
+    </button>
+    <button class="iconbtn" id="btnCam" title="Câmera" aria-label="Câmera">
+      <svg viewBox="0 0 13 9" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">
+        <rect x="1" y="1" width="8" height="7"/><rect x="9" y="3" width="1" height="3"/>
+        <rect x="10" y="2" width="1" height="5"/><rect x="11" y="1" width="1" height="7"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="tr">
+    <button class="woodbtn" id="btnShare">Compartilhar andar</button>
+    <div class="me"><span class="ava">V</span><span class="nm"><span>Você</span><small id="meStatus">livre</small></span></div>
+  </div>
+
+  <div class="frame panel hide" id="panelInfo">
+    <p><b>O que é isto.</b> Um protótipo do escritório virtual: você anda, encosta em alguém para ligar, senta na mesa para entrar na reunião.</p>
+    <p><b>O que é de verdade.</b> A mecânica, as regras de status e a ordem das chamadas de API no registro.</p>
+    <p><b>O que é falso.</b> A rede — todo mundo roda na sua máquina — e o vídeo. Os links do Meet têm o formato certo, mas não abrem nada.</p>
+  </div>
+
+  <div class="rail">
+    <div class="frame panel" id="panelPeople">
+      <h3>Quem está no andar <span>você + 6</span></h3>
+      <div class="body"><ul class="roster" id="roster"></ul></div>
+    </div>
+    <div class="frame panel" id="panelLog">
+      <h3>O que roda por trás <span>tempo real</span></h3>
+      <div class="body"><div class="log" id="log"></div></div>
+    </div>
+  </div>
+
+  <div class="frame callhud" id="callhud">
+    <span class="live" id="cbdot"></span>
+    <span class="tiles" id="cbpeople"></span>
+    <span class="ct"><b id="cbtitle">—</b><small id="cblink"></small></span>
+    <button class="woodbtn" id="btnopen">Abrir no Meet</button>
+    <button class="woodbtn danger" id="btnleave">Sair</button>
+  </div>
+
+  <div class="frame hint" id="hint"><span class="key">E</span><span id="hinttext"></span></div>
+  <div class="frame toast" id="toast"></div>
+
+  <div class="pad">
+    <div class="row"><button data-dir="up" aria-label="cima">▲</button></div>
+    <div class="row">
+      <button data-dir="left" aria-label="esquerda">◀</button>
+      <button data-dir="down" aria-label="baixo">▼</button>
+      <button data-dir="right" aria-label="direita">▶</button>
+    </div>
+  </div>
+  <div class="act"><button id="btnact">E</button></div>
+
+  <div class="intro" id="intro">
+    <div class="frame">
+      <h2>Seu andar do escritório</h2>
+      <p>Ande com <b>WASD</b> ou as setas. Chegue perto de alguém e aperte <b>E</b> para ligar. Sente na mesa da Sala Ipê para entrar na reunião.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+
+/* ================= base ================= */
+const TILE = 32, WW = 960, WH = 640;
+const OX = 140, OY = 110, CW = 1240, CH = 860;
+const U = 2;                                  // tamanho do "pixel" de arte
+const t = (n) => n * TILE;
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const D = (a,b,c,d) => Math.hypot(a-c, b-d);
+const first = (n) => n.split(" ")[0];
+const snap = (v) => Math.round(v/U)*U;
+
+function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+  let a = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  a = a + Math.imul(a ^ a >>> 7, 61 | a) ^ a;
+  return ((a ^ a >>> 14) >>> 0) / 4294967296; }; }
+
+/* blocos alinhados ao pixel de arte */
+function blk(g,x,y,w,h,fill){
+  g.fillStyle = fill;
+  g.fillRect(snap(x), snap(y), snap(w), snap(h));
+}
+function edge(g,x,y,w,h,c){
+  x = snap(x); y = snap(y); w = snap(w); h = snap(h);
+  g.fillStyle = c;
+  g.fillRect(x, y-U, w, U); g.fillRect(x, y+h, w, U);
+  g.fillRect(x-U, y, U, h); g.fillRect(x+w, y, U, h);
+}
+function panel(g,x,y,w,h,fill,out,top){
+  if(out) edge(g,x,y,w,h,out);
+  blk(g,x,y,w,h,fill);
+  if(top) blk(g,x,y,w,U*2,top);
+}
+function spr(g,x,y,rows,pal){
+  x = snap(x); y = snap(y);
+  for(let r=0;r<rows.length;r++){
+    const row = rows[r];
+    let c = 0;
+    while(c < row.length){
+      const ch = row[c];
+      let n = 1;
+      while(c+n < row.length && row[c+n] === ch) n++;
+      const col = pal[ch];
+      if(col){ g.fillStyle = col; g.fillRect(x + c*U, y + r*U, n*U, U); }
+      c += n;
+    }
+  }
+}
+
+/* ================= mundo ================= */
+const walls = [
+  [0,0,30,1],[0,19,30,1],[0,0,1,20],[29,0,1,20],
+  [18,1,1,5],[19,8,10,1],
+  [1,14,4,1],[7,14,1,1],[8,14,1,5]
+].map(([x,y,w,h]) => ({x:t(x), y:t(y), w:t(w), h:t(h)}));
+
+const desks = [
+  {x:t(3), y:t(3), w:t(3), h:t(1)},
+  {x:t(3), y:t(8), w:t(3), h:t(1)},
+  {x:t(10),y:t(3), w:t(3), h:t(1)},
+  {x:t(10),y:t(8), w:t(3), h:t(1)}
+];
+const table   = {x:668, y:76, w:200, h:88, cx:768, cy:120};
+const counter = {x:t(21), y:t(16), w:t(6), h:t(1)};
+const sofa    = {x:352, y:452, w:124, h:44};
+const lowtab  = {x:388, y:520, w:56, h:30};
+const solids  = walls.concat(desks, [table, counter, sofa, lowtab]);
+
+const zones = {
+  meeting: {x:t(19), y:t(1),  w:t(10), h:t(7)},
+  focus:   {x:t(1),  y:t(15), w:t(7),  h:t(4)},
+  kitchen: {x:t(19), y:t(13), w:t(10), h:t(6)}
+};
+
+/* ================= pessoas ================= */
+const ST = {
+  livre:   {label:"livre",      color:"#3F7D3A"},
+  foco:    {label:"em foco",    color:"#6E4E9E"},
+  reuniao: {label:"reuni\u00e3o", color:"#3F6EA8"},
+  cafe:    {label:"na copa",    color:"#C8781E"},
+  chamada: {label:"em chamada", color:"#3F7D3A"},
+  indo:    {label:"a caminho",  color:"#7A5936"}
+};
+
+const npcs = [
+  {id:"ana",    name:"Ana Ribeiro",  role:"Design",  x:144, y:168, color:"#C86A86", hair:"#4A2A28", status:"livre"},
+  {id:"diego",  name:"Diego Alves",  role:"Dados",   x:144, y:328, color:"#4E9E76", hair:"#241C16", status:"livre"},
+  {id:"carla",  name:"Carla Mendes", role:"Produto", x:368, y:168, color:"#D9A03C", hair:"#7A4B22", status:"livre"},
+  {id:"elisa",  name:"Elisa Nunes",  role:"Vendas",  x:368, y:328, color:"#4E82BE", hair:"#3B2A45", status:"livre"},
+  {id:"bruno",  name:"Bruno Sato",   role:"Backend", x:140, y:544, color:"#7A63A8", hair:"#1E1A24", status:"foco"},
+  {id:"felipe", name:"Felipe Costa", role:"Suporte", x:760, y:568, color:"#C8703E", hair:"#33241A", status:"cafe"}
+];
+const byId = (id) => npcs.find(n => n.id === id);
+const player = {id:"me", name:"Voc\u00ea", role:"voc\u00ea", x:240, y:420, color:"#D98F32", hair:"#4A3320", r:11, status:"livre"};
+
+/* ================= estado ================= */
+let mode = "livre";
+let partner = null, roomLink = null, callLink = null;
+let ringTimer = 0, nearby = null, tableLock = false;
+let walkers = [], puffs = [];
+let carlaSent = false, elisaSent = false;
+let micOn = true, camOn = true;
+
+/* ================= sprites ================= */
+const BODY = [
+  "...oooooo...",
+  "..ohhhhhho..",
+  ".ohhhhhhhho.",
+  ".ohssssssho.",
+  ".ohsesseSho.",
+  ".ohssssssho.",
+  "..osssssso..",
+  "...oSSSSo...",
+  "..obbbbbbo..",
+  ".obbbbbbbbo.",
+  ".obbbbbbbbo.",
+  ".obbbbbbbbo.",
+  "..obbbbbbo..",
+  "..oppppppo..",
+  "..okko.okko."
+];
+const cache = {};
+function personCanvas(p){
+  const key = p.color + p.hair;
+  if(cache[key]) return cache[key];
+  const c = document.createElement("canvas");
+  c.width = 12*U; c.height = 15*U;
+  spr(c.getContext("2d"), 0, 0, BODY, {
+    o:"#2A1A10", h:p.hair, s:"#F2CFA8", S:"#D8AE86", e:"#2A1A10",
+    b:p.color, p:"#3E3A52", k:"#2A1A10"
+  });
+  cache[key] = c;
+  return c;
+}
+
+const REACTIONS = [
+  {rows:["..oo.oo.",".oooooo.",".oooooo.","..oooo..","...oo...","........"], c:"#C8455A"},   // coração
+  {rows:["...oo...","...oo...","...oo...","...oo...","........","...oo..."], c:"#D98F32"},   // !
+  {rows:[".oooooo.","o.o..o.o","oooooooo","o.oooo.o","o.o..o.o",".oooooo."], c:"#3F7D3A"},   // rosto
+  {rows:["....oo..","..oooo..","..oo....","..oo....",".ooo....",".ooo...."], c:"#3F6EA8"}    // nota
+];
+
+/* ================= cenário ================= */
+const back = document.createElement("canvas");
+back.width = CW; back.height = CH;
+
+function tree(g,x,y,s){
+  s = s || 1;
+  const O="#1E3A1C", A="#356A2F", B="#4A8B3E", C="#66AA50";
+  const blocks = [ [12,4], [20,4], [26,6], [26,4], [20,4], [12,4] ];
+  const th = blocks.reduce((a,b) => a + b[1], 0) * U * s;
+  const top = y - 12*U*s - th;
+  // sombra
+  blk(g, x-13*U*s, y+2*U, 26*U*s, 5*U, "rgba(35,55,25,.22)");
+  // tronco
+  blk(g, x-3*U, y-13*U*s, 6*U, 13*U*s, "#5B3F26");
+  blk(g, x-3*U, y-13*U*s, 2*U, 13*U*s, "#77573A");
+  edge(g, x-3*U, y-13*U*s, 6*U, 13*U*s, "#33220F");
+  // contorno
+  let cy = top;
+  for(const [w,h] of blocks){
+    blk(g, x-(w*s/2)*U-U, cy-U, w*s*U+2*U, h*s*U+2*U, O);
+    cy += h*U*s;
+  }
+  // preenchimento
+  cy = top;
+  let i = 0;
+  for(const [w,h] of blocks){
+    blk(g, x-(w*s/2)*U, cy, w*s*U, h*s*U, i < 3 ? B : A);
+    cy += h*U*s;
+    i++;
+  }
+  // luz
+  blk(g, x-(9*s)*U, top+2*U, 8*s*U, 3*U, C);
+  blk(g, x-(11*s)*U, top+8*U, 5*s*U, 3*U, C);
+  blk(g, x+(4*s)*U, top+12*U, 4*s*U, 3*U, A);
+}
+function bush(g,x,y,s){
+  s = s || 1;
+  const w = Math.round(16*s)*U, h = Math.round(10*s)*U;
+  blk(g, x-w/2, y+2*U, w, 3*U, "rgba(35,55,25,.20)");
+  blk(g, x-w/2-U, y-h-U, w+2*U, h+2*U, "#1E3A1C");
+  blk(g, x-w/2+3*U, y-h-3*U, w-6*U, 3*U, "#1E3A1C");
+  blk(g, x-w/2, y-h, w, h, "#3F7A38");
+  blk(g, x-w/2+4*U, y-h-2*U, w-8*U, 3*U, "#3F7A38");
+  blk(g, x-w/2+3*U, y-h+2*U, w-12*U, 3*U, "#5B9A4C");
+}
+function flower(g,x,y,c){
+  blk(g,x,y,2*U,2*U,c); blk(g,x-2*U,y,2*U,2*U,c); blk(g,x+2*U,y,2*U,2*U,c);
+  blk(g,x,y-2*U,2*U,2*U,c); blk(g,x,y+2*U,2*U,2*U,c); blk(g,x,y,2*U,2*U,"#F2E3A0");
+}
+function pot(g,x,y,s){
+  s = s || 1;
+  const w = 10*U*s;
+  edge(g, x-w/2, y, w, 7*U*s, "#5B3417");
+  blk(g, x-w/2, y, w, 7*U*s, "#B5713F");
+  blk(g, x-w/2, y, w, 2*U, "#CE8A55");
+  edge(g, x-w/2+U, y-9*U*s, w-2*U, 9*U*s, "#23401F");
+  blk(g, x-w/2+U, y-9*U*s, w-2*U, 9*U*s, "#3F7A38");
+  blk(g, x-w/2+3*U, y-7*U*s, 4*U, 3*U, "#5B9A4C");
+}
+function chair(g,x,y,dir){
+  edge(g, x-8*U, y-6*U, 16*U, 12*U, "#2E2117");
+  blk(g, x-8*U, y-6*U, 16*U, 12*U, "#6B4A2E");
+  blk(g, x-8*U, y-6*U, 16*U, 2*U, "#87603D");
+  if(dir >= 0){ edge(g, x-9*U, y-11*U, 18*U, 5*U, "#2E2117"); blk(g, x-9*U, y-11*U, 18*U, 5*U, "#7A5535"); }
+  else { edge(g, x-9*U, y+6*U, 18*U, 5*U, "#2E2117"); blk(g, x-9*U, y+6*U, 18*U, 5*U, "#7A5535"); }
+}
+function monitor(g,x,y){
+  edge(g, x-14*U, y-16*U, 28*U, 16*U, "#191512");
+  blk(g, x-14*U, y-16*U, 28*U, 16*U, "#2E2A28");
+  blk(g, x-11*U, y-13*U, 22*U, 10*U, "#4E7C9E");
+  blk(g, x-11*U, y-13*U, 8*U, 3*U, "#7FB0C8");
+  blk(g, x-3*U, y, 6*U, 3*U, "#2E2A28");
+  blk(g, x-7*U, y+3*U, 14*U, 2*U, "#191512");
+}
+function laptop(g,x,y,c){
+  edge(g, x-9*U, y-9*U, 18*U, 9*U, "#191512");
+  blk(g, x-9*U, y-9*U, 18*U, 9*U, "#2E2A28");
+  blk(g, x-7*U, y-7*U, 14*U, 5*U, c);
+  edge(g, x-10*U, y, 20*U, 4*U, "#191512");
+  blk(g, x-10*U, y, 20*U, 4*U, "#3E3A38");
+}
+function mug(g,x,y,c){
+  edge(g, x-3*U, y-4*U, 6*U, 6*U, "#5B3417");
+  blk(g, x-3*U, y-4*U, 6*U, 6*U, c);
+  blk(g, x+3*U, y-3*U, 2*U, 3*U, c);
+}
+function sign(g,x,y,label){
+  g.font = "600 15px 'Pixelify Sans', monospace";
+  const w = snap(g.measureText(label).width + 26);
+  edge(g, x-w/2, y-11*U, w, 11*U, "#3A2413");
+  blk(g, x-w/2, y-11*U, w, 11*U, "#8B5A2B");
+  blk(g, x-w/2, y-11*U, w, 2*U, "#A97441");
+  blk(g, x-w/2+2*U, y-9*U, w-4*U, 7*U, "#F5E2B8");
+  g.fillStyle = "#4A2E12";
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(label, x, y-5*U);
+  g.textAlign = "left"; g.textBaseline = "alphabetic";
+}
+
+function paintBackdrop(){
+  const g = back.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  const R = rng(11);
+
+  /* --- grama em tiles --- */
+  for(let y=0;y<CH;y+=16){
+    for(let x=0;x<CW;x+=16){
+      blk(g,x,y,16,16,"#6DA34D");
+      const k = R();
+      if(k > .55){ blk(g, x+((R()*6|0)*U), y+((R()*6|0)*U), 2*U, U, "#5E9142"); }
+      if(k > .8){ blk(g, x+((R()*6|0)*U), y+((R()*6|0)*U), U, 2*U, "#7FB55C"); }
+    }
+  }
+  for(let i=0;i<26;i++){
+    const x = snap(R()*CW), y = snap(R()*CH);
+    const c = [ "#E8E2D0", "#E3C34A", "#C86A86", "#8FA8DB" ][R()*4|0];
+    if(x < OX-60 || x > OX+WW+60 || y < OY-60 || y > OY+WH+60) flower(g,x,y,c);
+  }
+
+  /* --- deck de madeira --- */
+  const M = 36, dx = OX-M, dy = OY-M, dw = WW+M*2, dh = WH+M*2;
+  edge(g, dx, dy, dw, dh, "#5B3417");
+  for(let y=dy;y<dy+dh;y+=8){
+    blk(g, dx, y, dw, 8, ((y/8)|0)%2 ? "#B9793E" : "#AC6E36");
+    blk(g, dx, y, dw, 2, "#C88A4C");
+    blk(g, dx, y+6, dw, 2, "#8A5528");
+  }
+  for(let y=dy;y<dy+dh;y+=8){
+    for(let x=dx + ((y/8)%2 ? 0 : 48); x<dx+dw; x+=96) blk(g, x, y, 2, 8, "#8A5528");
+  }
+
+  /* --- vegetação externa --- */
+  const outside = [
+    [64,170,1],[56,340,.9],[76,530,1],[62,712,.95],
+    [1176,190,1],[1188,390,.95],[1166,606,1],[1184,766,.9],
+    [300,74,.6],[520,70,.55],[864,74,.6],[1074,70,.55],
+    [262,816,.85],[560,824,.8],[904,820,.85]
+  ];
+  for(const [x,y,s] of outside) tree(g,snap(x),snap(y),s);
+  bush(g,156,86,1); bush(g,1112,116,.9); bush(g,124,794,1); bush(g,1122,704,.9);
+  bush(g,704,44,.85); bush(g,424,828,.85); bush(g,40,470,.9); bush(g,1204,470,.9);
+  pot(g, OX-20, OY+70, 1); pot(g, OX-20, OY+548, 1);
+  pot(g, OX+WW+20, OY+130, 1); pot(g, OX+WW+20, OY+478, 1);
+  pot(g, OX+210, OY-20, .9); pot(g, OX+742, OY-20, .9);
+  pot(g, OX+330, OY+WH+20, .9); pot(g, OX+642, OY+WH+20, .9);
+
+  /* --- interior --- */
+  g.save();
+  g.translate(OX, OY);
+  g.beginPath(); g.rect(0,0,WW,WH); g.clip();
+
+  // piso de tábuas
+  for(let y=0;y<WH;y+=16){
+    const dark = ((y/16)|0)%2;
+    blk(g, 0, y, WW, 16, dark ? "#CE9C5C" : "#D9A96A");
+    blk(g, 0, y, WW, 2, dark ? "#DCAF71" : "#E6BC80");
+    blk(g, 0, y+14, WW, 2, "#A87A44");
+    for(let x = (dark ? 0 : 48); x < WW; x += 96) blk(g, x, y, 2, 16, "#A87A44");
+  }
+
+  // tapete da sala de reunião
+  const mz = zones.meeting;
+  const rx = mz.x+24, ry = mz.y+16, rw = mz.w-48, rh = mz.h-40;
+  edge(g, rx, ry, rw, rh, "#2E5A54");
+  blk(g, rx, ry, rw, rh, "#4E8F86");
+  blk(g, rx+4, ry+4, rw-8, rh-8, "#3F7A72");
+  blk(g, rx+10, ry+10, rw-20, rh-20, "#5AA398");
+  for(let x=rx+16;x<rx+rw-16;x+=16){ blk(g,x,ry+6,8,4,"#7FC4B6"); blk(g,x,ry+rh-10,8,4,"#7FC4B6"); }
+  for(let y=ry+16;y<ry+rh-16;y+=16){ blk(g,rx+6,y,4,8,"#7FC4B6"); blk(g,rx+rw-10,y,4,8,"#7FC4B6"); }
+
+  // tapete da sala de foco
+  const fz = zones.focus;
+  edge(g, fz.x+28, fz.y+26, fz.w-56, fz.h-52, "#4A3A70");
+  blk(g, fz.x+28, fz.y+26, fz.w-56, fz.h-52, "#7A63A8");
+  blk(g, fz.x+36, fz.y+34, fz.w-72, fz.h-68, "#8E79BC");
+  blk(g, fz.x+48, fz.y+46, fz.w-96, fz.h-92, "#A08ACC");
+
+  // piso da copa
+  const kz = zones.kitchen;
+  for(let y=kz.y;y<kz.y+kz.h;y+=16)
+    for(let x=kz.x;x<kz.x+kz.w;x+=16){
+      blk(g,x,y,16,16, ((x/16 + y/16) % 2) ? "#E6DCC6" : "#D3C4A8");
+      blk(g,x,y,2,2,"#BEAE92");
+    }
+
+  // soleiras
+  for(let y=t(6);y<t(9);y+=8) blk(g, t(18), y, TILE, 4, "#C08A4E");
+  for(let x=t(5);x<t(7);x+=8) blk(g, x, t(14), 4, TILE, "#C08A4E");
+
+  /* --- paredes --- */
+  for(const w of walls){
+    blk(g, w.x, w.y+w.h, w.w, 6, "rgba(50,30,15,.25)");
+    edge(g, w.x, w.y, w.w, w.h, "#3A2413");
+    blk(g, w.x, w.y, w.w, w.h, "#7A4A22");
+    blk(g, w.x, w.y, w.w, 6, "#A9793E");
+    blk(g, w.x, w.y+6, w.w, 2, "#8B5A2B");
+    blk(g, w.x, w.y+w.h-4, w.w, 4, "#4A2A12");
+    if(w.w > w.h) for(let x=w.x+16;x<w.x+w.w;x+=32) blk(g, x, w.y+8, 2, w.h-12, "#5B3417");
+    else for(let y=w.y+16;y<w.y+w.h;y+=32) blk(g, w.x+4, y, w.w-8, 2, "#5B3417");
+  }
+  // janelas de vidro na parede sul da sala
+  for(const gx of [t(21), t(25)]){
+    edge(g, gx, t(8)+6, t(3), 20, "#3A2413");
+    blk(g, gx, t(8)+6, t(3), 20, "#8FC7C4");
+    blk(g, gx, t(8)+6, t(3), 6, "#B6E0DC");
+    blk(g, gx+t(1)-2, t(8)+6, 4, 20, "#5B3417");
+    blk(g, gx+t(2)-2, t(8)+6, 4, 20, "#5B3417");
+  }
+
+  /* --- mesas de trabalho --- */
+  for(const d of desks){
+    const cx = d.x + d.w/2;
+    chair(g, cx, d.y + d.h + 24, 1);
+    blk(g, d.x, d.y+d.h, d.w, 6, "rgba(50,30,15,.22)");
+    edge(g, d.x, d.y, d.w, d.h, "#3A2413");
+    blk(g, d.x, d.y, d.w, d.h, "#8B5A2B");
+    blk(g, d.x, d.y, d.w, 6, "#A9793E");
+    blk(g, d.x, d.y+d.h-4, d.w, 4, "#5B3417");
+    monitor(g, cx, d.y + 20);
+    mug(g, d.x + d.w - 16, d.y + 22, "#B34A34");
+    blk(g, d.x + 10, d.y + 16, 16, 10, "#F5E2B8");
+    edge(g, d.x + 10, d.y + 16, 16, 10, "#A88E62");
+  }
+
+  /* --- mesa de reunião --- */
+  const seats = [[table.cx-68,table.cy-64,-1],[table.cx,table.cy-64,-1],[table.cx+68,table.cy-64,-1],
+                 [table.cx-68,table.cy+64,1],[table.cx,table.cy+64,1],[table.cx+68,table.cy+64,1]];
+  for(const [sx,sy,dir] of seats) chair(g, sx, sy, dir);
+  blk(g, table.x, table.y+table.h, table.w, 8, "rgba(50,30,15,.22)");
+  edge(g, table.x, table.y, table.w, table.h, "#3A2413");
+  blk(g, table.x, table.y, table.w, table.h, "#8B5A2B");
+  blk(g, table.x, table.y, table.w, 8, "#A9793E");
+  blk(g, table.x+8, table.y+10, table.w-16, table.h-22, "#9C6837");
+  blk(g, table.x, table.y+table.h-6, table.w, 6, "#5B3417");
+  laptop(g, table.cx-56, table.cy+4, "#4E7C9E");
+  laptop(g, table.cx+56, table.cy+4, "#6E4E9E");
+  mug(g, table.cx-16, table.cy+14, "#F5E2B8");
+  blk(g, table.cx+8, table.cy-12, 18, 12, "#F5E2B8");
+  edge(g, table.cx+8, table.cy-12, 18, 12, "#A88E62");
+  // televisão da sala
+  edge(g, table.cx-44, t(1)+4, 88, 22, "#191512");
+  blk(g, table.cx-44, t(1)+4, 88, 22, "#2E2A28");
+  pot(g, t(27)+8, t(6)+12, .9);
+
+  /* --- copa --- */
+  blk(g, counter.x, counter.y+counter.h, counter.w, 6, "rgba(50,30,15,.22)");
+  edge(g, counter.x, counter.y, counter.w, counter.h, "#3A2413");
+  blk(g, counter.x, counter.y, counter.w, counter.h, "#C7A876");
+  blk(g, counter.x, counter.y, counter.w, 6, "#DCC08A");
+  blk(g, counter.x, counter.y+counter.h-6, counter.w, 6, "#8A6E44");
+  for(let x=counter.x+32;x<counter.x+counter.w;x+=32) blk(g, x, counter.y+8, 2, counter.h-14, "#8A6E44");
+  edge(g, counter.x+14, counter.y-22, 22, 24, "#191512");
+  blk(g, counter.x+14, counter.y-22, 22, 24, "#3E3A38");
+  blk(g, counter.x+18, counter.y-16, 14, 8, "#B34A34");
+  mug(g, counter.x+104, counter.y-4, "#F5E2B8");
+  mug(g, counter.x+124, counter.y-4, "#8FC7C4");
+  // geladeira
+  edge(g, t(27), t(14), t(2)-8, t(2), "#3A2413");
+  blk(g, t(27), t(14), t(2)-8, t(2), "#DDD8CC");
+  blk(g, t(27), t(14), t(2)-8, 6, "#EFEBE0");
+  blk(g, t(27), t(15)+4, t(2)-8, 4, "#A9A296");
+  blk(g, t(29)-18, t(14)+14, 4, 14, "#8A8478");
+  // mesinha
+  chair(g, t(20)+16, t(14)+4, -1); chair(g, t(20)+16, t(15)+34, 1);
+  edge(g, t(20)+2, t(15)-8, 28, 24, "#3A2413");
+  blk(g, t(20)+2, t(15)-8, 28, 24, "#8B5A2B");
+  blk(g, t(20)+2, t(15)-8, 28, 6, "#A9793E");
+
+  /* --- estar --- */
+  blk(g, sofa.x, sofa.y+sofa.h, sofa.w, 6, "rgba(50,30,15,.22)");
+  edge(g, sofa.x, sofa.y, sofa.w, sofa.h, "#2E3A44");
+  blk(g, sofa.x, sofa.y, sofa.w, sofa.h, "#4E6C7E");
+  blk(g, sofa.x, sofa.y, sofa.w, 12, "#5F8296");
+  blk(g, sofa.x, sofa.y+10, 10, sofa.h-10, "#3E5A6C");
+  blk(g, sofa.x+sofa.w-10, sofa.y+10, 10, sofa.h-10, "#3E5A6C");
+  blk(g, sofa.x+6, sofa.y+16, 50, 22, "#6E92A6");
+  blk(g, sofa.x+68, sofa.y+16, 50, 22, "#6E92A6");
+  edge(g, sofa.x+6, sofa.y+16, 50, 22, "#2E3A44");
+  edge(g, sofa.x+68, sofa.y+16, 50, 22, "#2E3A44");
+  edge(g, lowtab.x, lowtab.y, lowtab.w, lowtab.h, "#3A2413");
+  blk(g, lowtab.x, lowtab.y, lowtab.w, lowtab.h, "#8B5A2B");
+  blk(g, lowtab.x, lowtab.y, lowtab.w, 6, "#A9793E");
+  blk(g, lowtab.x+12, lowtab.y+10, 20, 12, "#F5E2B8");
+  pot(g, sofa.x-24, sofa.y+34, .9);
+
+  /* --- estante --- */
+  edge(g, t(1)+4, t(4), 24, t(3), "#3A2413");
+  blk(g, t(1)+4, t(4), 24, t(3), "#7A4A22");
+  const spines = ["#B34A34","#4E8F86","#D9A03C","#7A63A8","#C86A86","#4E7C9E"];
+  for(let i=0;i<8;i++){
+    blk(g, t(1)+8, t(4)+8 + i*10, 16, 6, spines[i % spines.length]);
+  }
+  pot(g, t(16)+16, t(2)+14, 1);
+  pot(g, t(16)+16, t(17)+14, 1);
+  pot(g, t(27)+10, t(10)+18, 1);
+  pot(g, t(2)+16, t(11)+18, 1);
+  pot(g, t(9)+10, t(16)+18, .9);
+
+  /* --- placas --- */
+  sign(g, t(23), t(9)+26, "SALA IP\u00ca");
+  sign(g, t(4)+16, t(13)+20, "FOCO");
+  sign(g, t(24), t(12)+20, "COPA");
+
+  g.restore();
+}
+
+/* ================= render ================= */
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+
+function drawPerson(g,p,isPlayer){
+  const s = ST[p.status] || ST.livre;
+  blk(g, p.x-10, p.y+8, 20, 5, "rgba(50,30,15,.25)");
+  if(isPlayer) edge(g, p.x-10, p.y+8, 20, 5, "rgba(217,143,50,.85)");
+  g.drawImage(personCanvas(p), snap(p.x-12), snap(p.y-20));
+
+  g.font = "500 14px 'Pixelify Sans', monospace";
+  const short = isPlayer ? "Voc\u00ea" : first(p.name);
+  const tw = snap(g.measureText(short).width);
+  const bw = tw + 26, bx = snap(p.x - bw/2), by = snap(p.y - 44);
+  edge(g, bx, by, bw, 20, "#3A2413");
+  blk(g, bx, by, bw, 20, "#F5E2B8");
+  blk(g, bx, by, bw, 4, "#FBEFD2");
+  blk(g, bx+6, by+7, 6, 6, s.color);
+  edge(g, bx+6, by+7, 6, 6, "#3A2413");
+  g.fillStyle = "#4A2E12";
+  g.textBaseline = "middle";
+  g.fillText(short, bx+18, by+11);
+  g.textBaseline = "alphabetic";
+}
+
+let pulse = 0;
+function draw(dt){
+  pulse += dt;
+  ctx.clearRect(0,0,CW,CH);
+  ctx.drawImage(back,0,0);
+  ctx.save();
+  ctx.translate(OX,OY);
+
+  // alcance de voz: anel pontilhado em pixels
+  const R = 116;
+  const steps = 40;
+  for(let i=0;i<steps;i++){
+    if((i + Math.floor(pulse*3)) % 3 === 0) continue;
+    const a = i/steps * Math.PI*2;
+    ctx.fillStyle = "rgba(255,232,170,.75)";
+    ctx.fillRect(snap(player.x + Math.cos(a)*R), snap(player.y + Math.sin(a)*R*0.78), U*2, U*2);
+  }
+
+  if(mode === "reuniao"){
+    blk(ctx, table.cx-40, t(1)+8, 80, 14, "#5FBF6E");
+    blk(ctx, table.cx-40, t(1)+8, 80, 4, "#8FE09A");
+  }
+  if(nearby){
+    const b = (Math.sin(pulse*6) > 0) ? 0 : U;
+    edge(ctx, nearby.x-12-b, nearby.y+6-b, 24+b*2, 9+b*2, "#FFE8AA");
+  }
+
+  const all = npcs.concat([player]).sort((a,b) => a.y - b.y);
+  for(const p of all) drawPerson(ctx,p,p === player);
+
+  for(const f of puffs){
+    ctx.globalAlpha = clamp(f.life,0,1);
+    spr(ctx, f.x-8, f.y, f.r.rows, {o:f.r.c});
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+/* ================= colisão ================= */
+function blocked(x,y){
+  const r = player.r;
+  for(const s of solids)
+    if(x+r > s.x && x-r < s.x+s.w && y+r > s.y && y-r < s.y+s.h) return true;
+  return false;
+}
+function inZone(z,x,y){ return x > z.x && x < z.x+z.w && y > z.y && y < z.y+z.h; }
+function tableDist(){ return D(player.x, player.y, table.cx, table.cy+16); }
+
+/* ================= entrada ================= */
+const keys = {};
+const dirKeys = {ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",w:"up",s:"down",a:"left",d:"right"};
+addEventListener("keydown", (e) => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if(dirKeys[k]){ keys[dirKeys[k]] = true; e.preventDefault(); hideIntro(); }
+  if(k === "e" || k === "Enter") interact();
+  if(k === "Escape") leave();
+});
+addEventListener("keyup", (e) => {
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if(dirKeys[k]) keys[dirKeys[k]] = false;
+});
+if("ontouchstart" in window) document.body.classList.add("touch");
+document.querySelectorAll(".pad button").forEach((b) => {
+  const set = (v) => (ev) => { ev.preventDefault(); keys[b.dataset.dir] = v; hideIntro(); };
+  b.addEventListener("pointerdown", set(true));
+  b.addEventListener("pointerup", set(false));
+  b.addEventListener("pointerleave", set(false));
+  b.addEventListener("pointercancel", set(false));
+});
+document.getElementById("btnact").addEventListener("click", interact);
+document.getElementById("intro").addEventListener("pointerdown", hideIntro);
+
+/* ================= painéis ================= */
+const logEl = document.getElementById("log");
+function nowStr(){
+  const d = new Date();
+  return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n => String(n).padStart(2,"0")).join(":");
+}
+function log(html){
+  const el = document.createElement("div");
+  el.className = "ev";
+  el.innerHTML = '<span class="t">' + nowStr() + '</span>' + html;
+  logEl.prepend(el);
+  while(logEl.children.length > 40) logEl.lastChild.remove();
+}
+function meetCode(){
+  const L = "abcdefghijkmnopqrstuvwxyz";
+  const seg = (n) => Array.from({length:n}, () => L[Math.floor(Math.random()*L.length)]).join("");
+  return seg(3) + "-" + seg(4) + "-" + seg(3);
+}
+
+const rosterEl = document.getElementById("roster");
+const rosterAll = [player].concat(npcs);
+rosterAll.forEach((n) => {
+  const li = document.createElement("li");
+  li.dataset.id = n.id;
+  li.innerHTML =
+    '<span class="av" style="background:' + n.color + '">' + n.name[0] + '</span>' +
+    '<span class="who"><b>' + n.name + '</b><small>' + n.role + '</small></span>' +
+    '<span class="st"></span>';
+  rosterEl.append(li);
+});
+const meStatus = document.getElementById("meStatus");
+function paintRoster(){
+  for(const n of rosterAll){
+    const li = rosterEl.querySelector('[data-id="' + n.id + '"]');
+    const s = ST[n.status] || ST.livre;
+    const st = li.querySelector(".st");
+    if(st.textContent !== s.label){ st.textContent = s.label; st.style.color = s.color; }
+    if(n !== player) li.classList.toggle("near", D(n.x,n.y,player.x,player.y) < 118);
+  }
+  const ps = ST[player.status] || ST.livre;
+  if(meStatus.textContent !== ps.label){ meStatus.textContent = ps.label; meStatus.style.color = ps.color; }
+}
+
+const toastEl = document.getElementById("toast");
+let toastT = 0;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("on");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => toastEl.classList.remove("on"), 3000);
+}
+function hideIntro(){ document.getElementById("intro").classList.add("gone"); }
+
+/* ================= HUD ================= */
+const hud = document.getElementById("callhud");
+const cbTitle = document.getElementById("cbtitle");
+const cbPeople = document.getElementById("cbpeople");
+const cbLink = document.getElementById("cblink");
+const cbDot = document.getElementById("cbdot");
+const hintEl = document.getElementById("hint");
+const hintText = document.getElementById("hinttext");
+
+function paintBar(title, people, link, ringing){
+  hud.classList.add("on");
+  hintEl.classList.add("low");
+  cbTitle.textContent = title;
+  cbDot.className = "live" + (ringing ? " ring" : "");
+  cbLink.textContent = link ? "meet.google.com/" + link : "criando sala\u2026";
+  cbPeople.innerHTML = "";
+  for(const p of people){
+    const s = document.createElement("span");
+    s.className = "tile";
+    s.style.background = p.color;
+    s.textContent = p.name[0];
+    s.title = p.name;
+    cbPeople.append(s);
+  }
+}
+function hideBar(){ hud.classList.remove("on"); hintEl.classList.remove("low"); }
+
+document.getElementById("btnleave").addEventListener("click", leave);
+document.getElementById("btnopen").addEventListener("click", () => {
+  const l = (mode === "reuniao") ? roomLink : callLink;
+  if(!l){ toast("Nenhuma chamada ativa."); return; }
+  toast("Na vers\u00e3o real, abriria meet.google.com/" + l + " em outra aba.");
+  log('<b>abrir</b> meet.google.com/<u>' + l + '</u> \u00b7 nova aba');
+});
+
+const panels = {
+  info: document.getElementById("panelInfo"),
+  people: document.getElementById("panelPeople"),
+  log: document.getElementById("panelLog")
+};
+document.getElementById("btnInfo").addEventListener("click", () => panels.info.classList.toggle("hide"));
+document.getElementById("btnPeople").addEventListener("click", () => panels.people.classList.toggle("hide"));
+document.getElementById("btnGrid").addEventListener("click", () => panels.log.classList.toggle("hide"));
+const btnMic = document.getElementById("btnMic"), btnCam = document.getElementById("btnCam");
+btnMic.addEventListener("click", () => {
+  micOn = !micOn; btnMic.classList.toggle("off", !micOn);
+  if(mode === "chamada" || mode === "reuniao") log('<b>m\u00eddia</b> microfone ' + (micOn ? "ligado" : "desligado"));
+});
+btnCam.addEventListener("click", () => {
+  camOn = !camOn; btnCam.classList.toggle("off", !camOn);
+  if(mode === "chamada" || mode === "reuniao") log('<b>m\u00eddia</b> c\u00e2mera ' + (camOn ? "ligada" : "desligada"));
+});
+let reactIdx = 0;
+document.getElementById("btnEmoji").addEventListener("click", () => {
+  const r = REACTIONS[reactIdx++ % REACTIONS.length];
+  puffs.push({x:player.x, y:player.y-58, r:r, life:1.6});
+  log('<b>rea\u00e7\u00e3o</b> enviada \u00b7 vis\u00edvel para quem est\u00e1 perto');
+});
+document.getElementById("btnShare").addEventListener("click", () => {
+  toast("Link do andar copiado \u2014 quem abrir entra pela recep\u00e7\u00e3o.");
+  log('<b>convite</b> link do andar copiado');
+});
+
+/* ================= ações ================= */
+function interact(){
+  hideIntro();
+  if(mode !== "livre" || !nearby) return;
+  const n = nearby;
+  if(player.status === "foco"){ toast("Voc\u00ea est\u00e1 em foco. Saia da sala para ligar para algu\u00e9m."); return; }
+  if(n.status === "foco"){
+    log('<b>recado</b> para ' + first(n.name) + ' \u00b7 em foco, chamada bloqueada');
+    toast(first(n.name) + " est\u00e1 em foco. Recado enviado \u2014 ele responde quando sair.");
+    return;
+  }
+  if(n.status === "reuniao" || n.status === "indo"){
+    toast(first(n.name) + " est\u00e1 em reuni\u00e3o. Entre na Sala Ip\u00ea para falar com ela.");
+    return;
+  }
+  mode = "tocando"; partner = n; callLink = meetCode(); ringTimer = 1.4;
+  paintBar("Chamando " + first(n.name) + "\u2026", [player, n], null, true);
+  log('<b>POST</b> /v2/spaces \u00b7 chamada 1:1');
+}
+function answered(){
+  mode = "chamada";
+  partner.status = "chamada"; player.status = "chamada";
+  paintBar("Em chamada com " + first(partner.name), [player, partner], callLink, false);
+  log('<b>201</b> meetingUri <u>meet.google.com/' + callLink + '</u>');
+  log('<b>join</b> ' + first(partner.name) + ' entrou \u00b7 <i>2 participantes</i>');
+}
+function joinMeeting(){
+  mode = "reuniao"; player.status = "reuniao";
+  if(!roomLink){
+    roomLink = meetCode();
+    log('<b>POST</b> /v2/spaces \u00b7 mesa da Sala Ip\u00ea');
+    log('<b>201</b> meetingUri <u>meet.google.com/' + roomLink + '</u> \u00b7 link fixo da mesa');
+  } else {
+    log('<b>GET</b> /v2/spaces/mesa-ipe \u00b7 reaproveita o link da mesa');
+  }
+  log('<b>join</b> Voc\u00ea entrou \u00b7 <i>confer\u00eancia ativa</i>');
+  refreshBar();
+  if(!carlaSent){ carlaSent = true; setTimeout(() => sendToMeeting("carla", [[368,208],[560,224],[640,224],[836,208],[836,186]]), 3000); }
+  if(!elisaSent){ elisaSent = true; setTimeout(() => sendToMeeting("elisa", [[440,328],[440,224],[560,224],[640,224],[704,208],[704,186]]), 9000); }
+}
+function refreshBar(){
+  const people = [player].concat(npcs.filter(n => n.status === "reuniao"));
+  paintBar("Sala Ip\u00ea \u00b7 " + people.length + " na chamada", people, roomLink, false);
+}
+function sendToMeeting(id, path){
+  if(mode !== "reuniao") return;
+  const n = byId(id);
+  if(n.status !== "livre") return;
+  n.status = "indo";
+  walkers.push({n:n, path:path, i:0});
+  log('<b>presen\u00e7a</b> ' + first(n.name) + ' saiu da mesa \u00b7 indo para a Sala Ip\u00ea');
+}
+function leave(){
+  if(mode === "chamada"){
+    log('<b>leave</b> chamada encerrada \u00b7 <i>space fechado</i>');
+    partner.status = "livre"; partner = null; callLink = null;
+  } else if(mode === "tocando"){
+    log('<b>cancelado</b> chamada n\u00e3o completada');
+    partner = null; callLink = null;
+  } else if(mode === "reuniao"){
+    const restam = npcs.filter(n => n.status === "reuniao").length;
+    log('<b>leave</b> voc\u00ea saiu da mesa \u00b7 <i>' + (restam ? restam + " ainda na confer\u00eancia" : "confer\u00eancia encerrada") + '</i>');
+    tableLock = true;
+  } else return;
+  mode = "livre"; hideBar();
+}
+
+/* ================= laço ================= */
+let last = performance.now(), rosterClock = 0;
+function step(ts){
+  const dt = Math.min(0.05, (ts - last)/1000);
+  last = ts;
+
+  if(mode !== "tocando"){
+    const sp = 168 * dt;
+    const dx = (keys.right?1:0) - (keys.left?1:0);
+    const dy = (keys.down?1:0) - (keys.up?1:0);
+    if(dx || dy){
+      const m = Math.hypot(dx,dy) || 1;
+      const nx = player.x + dx/m*sp, ny = player.y + dy/m*sp;
+      if(!blocked(nx, player.y)) player.x = clamp(nx, 20, WW-20);
+      if(!blocked(player.x, ny)) player.y = clamp(ny, 20, WH-20);
+      if(mode === "chamada" && partner && D(player.x,player.y,partner.x,partner.y) > 150){
+        toast("Voc\u00ea se afastou. Chamada encerrada."); leave();
+      }
+    }
+  }
+
+  for(let i = walkers.length - 1; i >= 0; i--){
+    const wk = walkers[i], tgt = wk.path[wk.i];
+    const d = D(wk.n.x, wk.n.y, tgt[0], tgt[1]);
+    if(d < 3){
+      wk.i++;
+      if(wk.i >= wk.path.length){
+        walkers.splice(i,1); wk.n.status = "reuniao";
+        const total = npcs.filter(n => n.status === "reuniao").length + (mode === "reuniao" ? 1 : 0);
+        log('<b>join</b> ' + first(wk.n.name) + ' entrou \u00b7 <i>' + total + ' participantes</i>');
+        if(mode === "reuniao") refreshBar();
+      }
+    } else {
+      const v = 150*dt;
+      wk.n.x += (tgt[0]-wk.n.x)/d*v; wk.n.y += (tgt[1]-wk.n.y)/d*v;
+    }
+  }
+
+  for(let i = puffs.length - 1; i >= 0; i--){
+    puffs[i].y -= 24*dt; puffs[i].life -= dt*0.8;
+    if(puffs[i].life <= 0) puffs.splice(i,1);
+  }
+
+  if(mode === "tocando"){ ringTimer -= dt; if(ringTimer <= 0) answered(); }
+
+  const atTable = tableDist() < 140;
+  if(!atTable && tableLock) tableLock = false;
+  if(atTable && mode === "livre" && !tableLock) joinMeeting();
+  if(!atTable && mode === "reuniao") leave();
+
+  if(mode === "livre"){
+    if(inZone(zones.focus, player.x, player.y)){
+      if(player.status !== "foco"){ player.status = "foco"; log('<b>status</b> voc\u00ea entrou na sala de foco \u00b7 chamadas bloqueadas'); }
+    } else if(inZone(zones.kitchen, player.x, player.y)){
+      player.status = "cafe";
+    } else if(player.status !== "livre"){
+      player.status = "livre";
+    }
+  }
+
+  nearby = null;
+  if(mode === "livre"){
+    let best = 82;
+    for(const n of npcs){
+      const d = D(n.x,n.y,player.x,player.y);
+      if(d < best){ best = d; nearby = n; }
+    }
+  }
+
+  if(mode === "livre" && nearby){
+    hintEl.classList.add("on");
+    const f = first(nearby.name);
+    if(player.status === "foco"){ hintEl.classList.add("off"); hintText.textContent = "Voc\u00ea est\u00e1 em foco \u2014 ningu\u00e9m consegue te ligar"; }
+    else if(nearby.status === "foco"){ hintEl.classList.add("off"); hintText.textContent = "Mandar recado para " + f + " \u2014 ele est\u00e1 em foco"; }
+    else if(nearby.status === "reuniao" || nearby.status === "indo"){ hintEl.classList.add("off"); hintText.textContent = f + " est\u00e1 em reuni\u00e3o"; }
+    else { hintEl.classList.remove("off"); hintText.textContent = "Ligar para " + f; }
+  } else if(mode === "livre" && player.status === "foco"){
+    hintEl.classList.add("on","off"); hintText.textContent = "Sala de foco \u2014 voc\u00ea aparece como em foco para o time";
+  } else if(mode === "livre" && player.status === "cafe"){
+    hintEl.classList.add("on","off"); hintText.textContent = "Copa \u2014 quem entra aqui aparece como na copa";
+  } else {
+    hintEl.classList.remove("on");
+  }
+
+  rosterClock += dt;
+  if(rosterClock > 0.16){ rosterClock = 0; paintRoster(); }
+  draw(dt);
+  requestAnimationFrame(step);
+}
+
+function boot(){
+  paintBackdrop();
+  paintRoster();
+  log('<b>pronto</b> 7 pessoas no andar \u00b7 nenhuma confer\u00eancia ativa');
+  requestAnimationFrame(step);
+}
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot); else boot();
+
+})();
+
+</script>
+</body>
+</html>
