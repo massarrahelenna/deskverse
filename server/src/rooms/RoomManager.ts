@@ -11,7 +11,7 @@ interface ConnectedPlayer {
   socket: WebSocket;
   state: PlayerState;
   absenceTimer: ReturnType<typeof setTimeout> | null;
-  pendingZoneId?: string; // zone enter awaiting ZONE_JOIN_CONFIRM
+  pendingZoneId?: string;
 }
 
 interface ZoneConfig {
@@ -66,12 +66,9 @@ export class RoomManager {
     }
   }
 
-  // ─── Player lifecycle ──────────────────────────────────────────────────────
-
   addPlayer(socket: WebSocket, state: PlayerState): void {
     const existing = this.players.get(state.id);
     if (existing) {
-      // Reconnect: reuse existing state, update socket
       existing.socket = socket;
       existing.state.status = "livre";
       this.resetAbsenceTimer(state.id);
@@ -107,7 +104,6 @@ export class RoomManager {
 
     clearTimeout(player.absenceTimer ?? undefined);
 
-    // Clean up zone occupancy
     for (const zone of this.zones.values()) {
       if (zone.occupants.has(playerId)) {
         zone.occupants.delete(playerId);
@@ -115,10 +111,8 @@ export class RoomManager {
       }
     }
 
-    // Leave conversation if in one
     this.leaveConversation(playerId, true);
 
-    // Cancel pending invites
     const cancelledIds = this.inviteManager.cancelAll(playerId);
     for (const id of cancelledIds) {
       this.broadcast({ type: "INVITE_EXPIRED", inviteId: id });
@@ -128,8 +122,6 @@ export class RoomManager {
     this.broadcast({ type: "PLAYER_LEAVE", playerId });
     console.log(`[room] ${playerId} left. Total: ${this.players.size}`);
   }
-
-  // ─── Movement & Absence ───────────────────────────────────────────────────
 
   updatePosition(
     playerId: string,
@@ -168,8 +160,6 @@ export class RoomManager {
     }, ABSENCE_TIMEOUT_MS);
   }
 
-  // ─── Status ───────────────────────────────────────────────────────────────
-
   setStatus(playerId: string, status: PlayerState["status"]): void {
     const player = this.players.get(playerId);
     if (!player || player.state.status === status) return;
@@ -180,7 +170,6 @@ export class RoomManager {
   private setStatusIfAllowed(playerId: string, status: PlayerState["status"]): void {
     const player = this.players.get(playerId);
     if (!player) return;
-    // Cannot become ausente if in a meeting or resting
     if (status === "ausente" && (player.state.status === "em_reuniao" || player.state.status === "em_descanso")) return;
     this.setStatus(playerId, status);
   }
@@ -195,8 +184,6 @@ export class RoomManager {
       this.deliverPendingRecados(playerId);
     }
   }
-
-  // ─── Zones ────────────────────────────────────────────────────────────────
 
   playerEnterZone(playerId: string, zoneId: string): void {
     const player = this.players.get(playerId);
@@ -250,7 +237,6 @@ export class RoomManager {
     this.sendTo(player.socket, { type: "CONVERSATION_JOIN", conversation });
 
     if (!isNew) {
-      // Notify other participants that someone new joined
       for (const participantId of conversation.participants) {
         if (participantId !== playerId) {
           const other = this.players.get(participantId);
@@ -270,7 +256,6 @@ export class RoomManager {
     if (player.pendingZoneId === zoneId) {
       player.pendingZoneId = undefined;
     }
-    // Remove from occupants if they chose to cancel
     const zone = this.zones.get(zoneId);
     if (zone) {
       zone.occupants.delete(playerId);
@@ -301,8 +286,6 @@ export class RoomManager {
 
     this.broadcastZoneState(zoneId);
   }
-
-  // ─── Invites ──────────────────────────────────────────────────────────────
 
   sendInvite(fromId: string, toId: string): void {
     const from = this.players.get(fromId);
@@ -345,7 +328,6 @@ export class RoomManager {
       return;
     }
 
-    // Create conversation
     const conversation = this.convManager.createForPair([invite.fromId, invite.toId]);
     this.setStatus(invite.fromId, "em_reuniao");
     this.setStatus(invite.toId, "em_reuniao");
@@ -353,14 +335,11 @@ export class RoomManager {
     if (from) this.sendTo(from.socket, { type: "INVITE_RESULT", inviteId, accepted: true, conversation });
     if (to) this.sendTo(to.socket, { type: "INVITE_RESULT", inviteId, accepted: true, conversation });
 
-    // Also send CONVERSATION_JOIN so both open the HUD
     if (from) this.sendTo(from.socket, { type: "CONVERSATION_JOIN", conversation });
     if (to) this.sendTo(to.socket, { type: "CONVERSATION_JOIN", conversation });
 
     console.log(`[invite] accepted → conv ${conversation.id} (${conversation.meetUrl})`);
   }
-
-  // ─── Conversations ────────────────────────────────────────────────────────
 
   leaveConversation(playerId: string, silent: boolean): void {
     const updatedConv = this.convManager.removeParticipant(playerId);
@@ -375,18 +354,14 @@ export class RoomManager {
     }
 
     if (updatedConv) {
-      // Notify remaining participants
       for (const pid of updatedConv.participants) {
         const p = this.players.get(pid);
         if (p) this.sendTo(p.socket, { type: "CONVERSATION_UPDATE", conversation: updatedConv });
       }
     } else {
-      // Last one out — conversation ended
       this.broadcast({ type: "CONVERSATION_END", conversationId: "ended" });
     }
   }
-
-  // ─── Recados ─────────────────────────────────────────────────────────────
 
   sendRecado(fromId: string, toId: string, content: string): void {
     const from = this.players.get(fromId);
@@ -424,8 +399,6 @@ export class RoomManager {
   markRecadosSeen(playerId: string): void {
     this.recados.delete(playerId);
   }
-
-  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private allStates(): PlayerState[] {
     return Array.from(this.players.values()).map((p) => p.state);

@@ -2,7 +2,7 @@ export interface ZoneMusic {
   trackUri:   string;
   trackName:  string;
   artistName: string;
-  startedAt:  number; // epoch ms
+  startedAt:  number;
   isPlaying:  boolean;
   djId:       string;
   djName:     string;

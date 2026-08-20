@@ -5,7 +5,6 @@ import { useChatStore } from "../stores/chatStore";
 import { SocketManager } from "../networking/SocketManager";
 import type { PlayerStatus } from "@shared/types";
 
-// ─── palette ─────────────────────────────────────────────────────────────────
 const C = {
   woodDark:  "#5B3417",
   woodLite:  "#C89A5B",
@@ -58,8 +57,6 @@ const woodBtn: React.CSSProperties = {
   letterSpacing: 0.5,
   whiteSpace: "nowrap" as const,
 };
-
-// ─── pixel-art SVG icons ──────────────────────────────────────────────────────
 
 function InfoIcon() {
   return (
@@ -115,41 +112,30 @@ function EyeIcon({ active }: { active: boolean }) {
   );
 }
 
-// Real Spotify logo — green circle with 3 sound-wave arcs
 function SpotifyIcon() {
   return (
     <svg viewBox="0 0 24 24" width={24} height={24} aria-hidden>
       <circle cx="12" cy="12" r="12" fill="#1DB954" />
-      {/* top arc (widest) */}
       <path d="M6.5 9.5 Q12 6 17.5 9.5" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* middle arc */}
       <path d="M7.5 13 Q12 9.5 16.5 13" stroke="white" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-      {/* bottom arc (narrowest) */}
       <path d="M8.5 16.5 Q12 13.5 15.5 16.5" stroke="white" strokeWidth="1.6" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
 
-// Pixel-art calendar icon
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 14 14" width={22} height={22} shapeRendering="crispEdges" fill="currentColor" aria-hidden>
-      {/* outer frame */}
       <rect x="0" y="2" width="14" height="12" />
-      {/* white inside */}
       <rect x="1" y="4" width="12" height="9" fill={C.parch2} />
-      {/* header */}
       <rect x="1" y="2" width="12" height="2" fill={C.woodDark} />
-      {/* binding pegs */}
       <rect x="3" y="0" width="2" height="4" fill={C.woodLite} />
       <rect x="9" y="0" width="2" height="4" fill={C.woodLite} />
-      {/* grid dots (days) */}
       <rect x="2"  y="6" width="2" height="2" fill={C.inkSoft} />
       <rect x="6"  y="6" width="2" height="2" fill={C.inkSoft} />
       <rect x="10" y="6" width="2" height="2" fill={C.inkSoft} />
       <rect x="2"  y="10" width="2" height="2" fill={C.inkSoft} />
       <rect x="6"  y="10" width="2" height="2" fill={C.inkSoft} />
-      {/* highlighted day */}
       <rect x="10" y="10" width="2" height="2" fill={C.green} />
     </svg>
   );
@@ -158,8 +144,6 @@ function CalendarIcon() {
 interface StatusBarProps {
   onOpenCalendar?: () => void;
 }
-
-// ─── component ───────────────────────────────────────────────────────────────
 
 export function StatusBar({ onOpenCalendar }: StatusBarProps) {
   const name          = usePlayerStore((s) => s.name);
@@ -185,12 +169,10 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
 
   return (
     <>
-      {/* ── top-left toolbar ────────────────────────────────────────────────── */}
       <div style={{
         position: "fixed", top: 14, left: 14,
         display: "flex", gap: 8, zIndex: 200,
       }}>
-        {/* Info */}
         <button
           style={{ ...iconBtn, background: showAbout ? C.parch : C.parch2 }}
           title="Sobre o DeskVerse"
@@ -199,7 +181,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
           <InfoIcon />
         </button>
 
-        {/* People */}
         <button
           style={{ ...iconBtn, background: showPeople ? C.parch : C.parch2 }}
           title="Quem está no andar"
@@ -219,7 +200,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
           </span>
         </button>
 
-        {/* Chat geral */}
         <button
           style={{ ...iconBtn, background: chatOpen ? C.parch : C.parch2 }}
           title="Chat do escritório"
@@ -241,7 +221,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
           )}
         </button>
 
-        {/* Spotify */}
         <button
           style={{ ...iconBtn, background: showSpotify ? C.parch : C.parch2 }}
           title="Spotify – música na Copa"
@@ -250,7 +229,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
           <SpotifyIcon />
         </button>
 
-        {/* Google Agenda */}
         {onOpenCalendar && (
           <button
             style={{ ...iconBtn }}
@@ -262,7 +240,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
         )}
       </div>
 
-      {/* ── center toolbar: focus ────────────────────────────────────────────── */}
       {canToggleFocus && (
         <div style={{
           position: "fixed", top: 14,
@@ -287,7 +264,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
         </div>
       )}
 
-      {/* ── top-right: player card ───────────────────────────────────────────── */}
       <div style={{
         position: "fixed", top: 14, right: 14,
         display: "flex", gap: 8, alignItems: "stretch", zIndex: 200,
@@ -321,7 +297,6 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
         </div>
       </div>
 
-      {/* ── "sobre" panel ────────────────────────────────────────────────────── */}
       {showAbout && (
         <div style={{
           position: "fixed", top: 70, left: 14,

@@ -22,8 +22,6 @@ function cookieOpts() {
 }
 
 export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
-  // ── Google ────────────────────────────────────────────────────────────────
-
   app.get("/auth/google", async (_req, reply) => {
     const params = new URLSearchParams({
       client_id:     process.env.GOOGLE_CLIENT_ID!,
@@ -72,8 +70,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     reply.redirect(`${clientUrl()}/?auth=success`);
   });
 
-  // ── GitHub ────────────────────────────────────────────────────────────────
-
   app.get("/auth/github", async (_req, reply) => {
     const params = new URLSearchParams({
       client_id:    process.env.GITHUB_CLIENT_ID!,
@@ -116,8 +112,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     reply.setCookie("dv_token", token, cookieOpts());
     reply.redirect(`${clientUrl()}/?auth=success`);
   });
-
-  // ── Me + Logout ───────────────────────────────────────────────────────────
 
   app.get("/api/me", async (req, reply) => {
     try {

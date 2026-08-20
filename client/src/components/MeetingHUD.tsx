@@ -5,7 +5,6 @@ import { usePlayerStore } from "../stores/playerStore";
 import { SocketManager } from "../networking/SocketManager";
 import { JitsiPanel } from "./JitsiPanel";
 
-// Pixel-art camera icon
 function CameraIcon({ on }: { on: boolean }) {
   const c = on ? "#7dd3fc" : "#4E8F86";
   return (
@@ -60,7 +59,6 @@ export function MeetingHUD() {
           userSelect: "none",
         }}
       >
-        {/* pulse dot */}
         <div
           style={{
             width: 10,
@@ -83,7 +81,6 @@ export function MeetingHUD() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Video toggle */}
         <button
           onClick={() => setVideoOpen((v) => !v)}
           title={videoOpen ? "Fechar vídeo" : "Abrir vídeo"}
@@ -104,7 +101,6 @@ export function MeetingHUD() {
           {videoOpen ? "Fechar vídeo" : "Abrir vídeo"}
         </button>
 
-        {/* Leave */}
         <button
           onClick={() => {
             setVideoOpen(false);

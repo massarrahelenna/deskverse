@@ -19,7 +19,6 @@ interface Props {
   onHangup: () => void;
 }
 
-// Extracts room name from https://meet.jit.si/deskverse-<id>
 function roomFromUrl(url: string): string {
   return url.split("/").pop() ?? url;
 }
@@ -97,7 +96,7 @@ export function JitsiPanel({ meetUrl, displayName, onHangup }: Props) {
     <div
       style={{
         position: "fixed",
-        bottom: 60,   // sits above MeetingHUD (52px) + gap
+        bottom: 60,
         right: 16,
         width: 480,
         height: 360,
@@ -110,7 +109,6 @@ export function JitsiPanel({ meetUrl, displayName, onHangup }: Props) {
         fontFamily: "'Pixelify Sans', monospace",
       }}
     >
-      {/* title bar */}
       <div
         style={{
           height: 28,
@@ -129,7 +127,6 @@ export function JitsiPanel({ meetUrl, displayName, onHangup }: Props) {
         </span>
       </div>
 
-      {/* jitsi container */}
       <div ref={containerRef} style={{ flex: 1, position: "relative" }}>
         {loading && (
           <div

@@ -2,7 +2,7 @@ import { pgTable, uuid, varchar, text, timestamp, bigint } from "drizzle-orm/pg-
 
 export const users = pgTable("users", {
   id:                 uuid("id").primaryKey().defaultRandom(),
-  oauthProvider:      varchar("oauth_provider", { length: 20 }).notNull(), // 'google' | 'github'
+  oauthProvider:      varchar("oauth_provider", { length: 20 }).notNull(),
   oauthId:            varchar("oauth_id", { length: 100 }).notNull(),
   email:              varchar("email", { length: 255 }),
   displayName:        varchar("display_name", { length: 100 }).notNull(),

@@ -2,15 +2,13 @@ import * as PIXI from "pixi.js";
 
 const TILE_SIZE = 32;
 
-// Generates a procedural office tileset texture at runtime.
-// Tile index 0 = transparent, 1 = floor, 2 = wall, 3 = desk top, 4 = desk front
 const TILE_COLORS: Record<number, string> = {
-  1: "#3d4a6b", // floor
-  2: "#1a1a2e", // wall
-  3: "#5c4033", // desk top
-  4: "#4a3228", // desk front
-  5: "#2e5339", // plant
-  6: "#7ab8f5", // window
+  1: "#3d4a6b",
+  2: "#1a1a2e",
+  3: "#5c4033",
+  4: "#4a3228",
+  5: "#2e5339",
+  6: "#7ab8f5",
 };
 
 export function generateOfficeTileset(columns = 8, rows = 8): PIXI.Texture {
@@ -31,13 +29,11 @@ export function generateOfficeTileset(columns = 8, rows = 8): PIXI.Texture {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-      // Add subtle detail lines
       ctx.strokeStyle = "rgba(0,0,0,0.2)";
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 0.5, y + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
 
       if (gid === 1) {
-        // Floor grid lines
         ctx.strokeStyle = "rgba(255,255,255,0.04)";
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -49,13 +45,11 @@ export function generateOfficeTileset(columns = 8, rows = 8): PIXI.Texture {
       }
 
       if (gid === 2) {
-        // Wall highlight
         ctx.fillStyle = "rgba(255,255,255,0.05)";
         ctx.fillRect(x, y, TILE_SIZE, 4);
       }
 
       if (gid === 3) {
-        // Desk top: monitor
         ctx.fillStyle = "#1e293b";
         ctx.fillRect(x + 6, y + 4, 20, 14);
         ctx.fillStyle = "#38bdf8";
@@ -65,7 +59,6 @@ export function generateOfficeTileset(columns = 8, rows = 8): PIXI.Texture {
       }
 
       if (gid === 4) {
-        // Desk front
         ctx.fillStyle = "rgba(0,0,0,0.15)";
         ctx.fillRect(x, y, TILE_SIZE, 8);
       }

@@ -57,7 +57,7 @@ function makeMap(collisionData: number[]): GameMap {
 describe("CollisionMap", () => {
   it("reports solid for wall tiles", () => {
     const data = Array(25).fill(0);
-    data[0] = 1; // top-left tile is wall
+    data[0] = 1;
     const col = new CollisionMap(makeMap(data));
     expect(col.isSolid(0, 0)).toBe(true);
     expect(col.isSolid(1, 0)).toBe(false);
@@ -72,25 +72,19 @@ describe("CollisionMap", () => {
   });
 
   it("detects bounding box collision", () => {
-    // Wall at tile (0,0) = world position (0..31, 0..31)
     const data = Array(25).fill(0);
     data[0] = 1;
     const col = new CollisionMap(makeMap(data));
 
-    // Box at (40, 40) with 24x28 should NOT collide
     expect(col.wouldCollide(40, 40, 24, 28)).toBe(false);
-
-    // Box at (0, 0) with 24x28 should collide with wall at tile (0,0)
     expect(col.wouldCollide(0, 0, 24, 28, 0)).toBe(true);
   });
 
   it("allows movement along walls without getting stuck", () => {
-    // Wall on entire top row (tiles 0..4 of row 0)
     const data = Array(25).fill(0);
     for (let i = 0; i < 5; i++) data[i] = 1;
     const col = new CollisionMap(makeMap(data));
 
-    // Player below the wall, moving right — should not collide
     expect(col.wouldCollide(64, 36, 24, 28)).toBe(false);
   });
 });

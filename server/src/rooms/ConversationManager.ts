@@ -4,7 +4,6 @@ import type { CallProvider } from "./CallProvider.js";
 
 export class ConversationManager {
   private conversations: Map<string, Conversation> = new Map();
-  // zoneId → conversationId (meeting room zones reuse the same conversation)
   private zoneConversations: Map<string, string> = new Map();
 
   constructor(private callProvider: CallProvider) {}
@@ -21,7 +20,6 @@ export class ConversationManager {
     return conv;
   }
 
-  // Returns existing zone conversation or creates a new one.
   joinZone(zoneId: string, playerId: string): { conversation: Conversation; isNew: boolean } {
     const existingId = this.zoneConversations.get(zoneId);
     if (existingId) {
@@ -70,7 +68,7 @@ export class ConversationManager {
     if (conv.participants.length === 0) {
       this.conversations.delete(conv.id);
       if (conv.zoneId) this.zoneConversations.delete(conv.zoneId);
-      return null; // conversation ended
+      return null;
     }
 
     return conv;

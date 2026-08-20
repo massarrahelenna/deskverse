@@ -75,7 +75,6 @@ export class AvatarRenderer {
     this.label.x = AVATAR_SIZE / 2;
     this.label.y = AVATAR_SIZE + 2;
 
-    // Chat bubble
     this.bubbleContainer = new PIXI.Container();
     this.bubbleBg        = new PIXI.Graphics();
     this.bubbleText      = new PIXI.Text({ text: "", style: BUBBLE_STYLE });
@@ -116,23 +115,18 @@ export class AvatarRenderer {
     const hair      = this.hairColor();
     const pants     = this.pantsColor();
 
-    // Shadow
     g.ellipse(cx, AVATAR_SIZE - 2, 8, 3);
     g.fill({ color: 0x000000, alpha: 0.25 });
 
-    // Body (shirt)
     g.roundRect(4, 10 + bobOffset, 16, 10, 3);
     g.fill({ color: this.shirtColor });
 
-    // Head
     g.circle(cx, 8 + bobOffset, 7);
     g.fill({ color: this.skinColor });
 
-    // Hair base
     g.circle(cx, 4 + bobOffset, 5.5);
     g.fill({ color: hair });
 
-    // Eyes
     if (this.direction === "down" || this.direction === "up") {
       const eyeY = (this.direction === "down" ? 9 : 7) + bobOffset;
       g.circle(cx - 2.5, eyeY, 1.2);
@@ -140,34 +134,27 @@ export class AvatarRenderer {
       g.fill({ color: 0x1a1a1a });
     }
 
-    // Accessory
     if (this.accessory === "hat") {
-      // pixel hat brim + crown
       g.roundRect(cx - 7, 0 + bobOffset, 14, 3, 1);
       g.fill({ color: 0x8B1a1a });
       g.roundRect(cx - 5, -4 + bobOffset, 10, 6, 1);
       g.fill({ color: 0xb02020 });
     } else if (this.accessory === "glasses") {
       const gy = (this.direction === "down" ? 9 : 7) + bobOffset - 0.5;
-      // left lens
       g.rect(cx - 5.5, gy - 1.5, 4, 3);
       g.stroke({ width: 0.8, color: 0x1a1a1a });
-      // right lens
       g.rect(cx + 1.5, gy - 1.5, 4, 3);
       g.stroke({ width: 0.8, color: 0x1a1a1a });
-      // bridge
       g.rect(cx - 1.5, gy - 0.5, 3, 1);
       g.fill({ color: 0x1a1a1a });
     }
 
-    // Status dot (top-right corner)
     const dotColor = STATUS_DOT_COLORS[this.status];
     g.circle(AVATAR_SIZE - 2, 1, 4);
     g.fill({ color: 0x000000, alpha: 0.4 });
     g.circle(AVATAR_SIZE - 2, 1, 3);
     g.fill({ color: dotColor });
 
-    // Legs / pants
     if (this.isMoving) {
       const legSwing = Math.sin(this.animFrame * 0.8) * 3;
       g.roundRect(7, 19 + legSwing, 4, 5, 1);
@@ -180,7 +167,6 @@ export class AvatarRenderer {
       g.fill({ color: pants });
     }
 
-    // Position chat bubble above avatar
     this.bubbleContainer.x = AVATAR_SIZE / 2;
     this.bubbleContainer.y = -(this.bubbleBg.height || 0) - 4;
   }

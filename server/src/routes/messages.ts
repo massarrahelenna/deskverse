@@ -4,7 +4,6 @@ import { db } from "../db/client.js";
 import { messages, users } from "../db/schema.js";
 
 export async function registerMessageRoutes(app: FastifyInstance): Promise<void> {
-  // GET /api/messages/:userId — fetch conversation between me and another user
   app.get("/api/messages/:userId", async (req, reply) => {
     let myId: string;
     try {
@@ -37,10 +36,9 @@ export async function registerMessageRoutes(app: FastifyInstance): Promise<void>
       .orderBy(desc(messages.createdAt))
       .limit(100);
 
-    return reply.send(rows.reverse()); // chronological order for the UI
+    return reply.send(rows.reverse());
   });
 
-  // POST /api/messages/:userId — send a message and persist it
   app.post("/api/messages/:userId", async (req, reply) => {
     let myId: string;
     try {
@@ -63,7 +61,6 @@ export async function registerMessageRoutes(app: FastifyInstance): Promise<void>
   });
 }
 
-/** Called from wsHandler when a RECADO_SEND event arrives — persists the message. */
 export async function persistMessage(senderId: string, receiverId: string, content: string): Promise<void> {
   await db.insert(messages).values({ senderId, receiverId, content }).execute();
 }

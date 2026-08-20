@@ -53,7 +53,6 @@ export function createWsHandler(_app: FastifyInstance, roomManager: RoomManager)
       status: "livre",
     });
 
-    // Send current zone music to the joining player
     for (const [zoneId, music] of zoneMusicManager.entries()) {
       if (socket.readyState === 1) {
         socket.send(JSON.stringify({ type: "ZONE_MUSIC", zoneId, music }));

@@ -10,7 +10,6 @@ async function getValidGoogleToken(userId: string): Promise<string | null> {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!user?.googleAccessToken) return null;
 
-  // Refresh if expired or expires in < 2 min
   if (user.googleTokenExpires && Date.now() > user.googleTokenExpires - 120_000) {
     if (!user.googleRefreshToken) return null;
     const res = await fetch(GOOGLE_TOKEN_URL, {
@@ -36,7 +35,6 @@ async function getValidGoogleToken(userId: string): Promise<string | null> {
 }
 
 export async function registerCalendarRoutes(app: FastifyInstance): Promise<void> {
-  // POST /api/calendar/events — create an event in the user's primary calendar
   app.post("/api/calendar/events", async (req, reply) => {
     let userId: string;
     try {
@@ -90,7 +88,6 @@ export async function registerCalendarRoutes(app: FastifyInstance): Promise<void
     return reply.send({ eventId: created.id, htmlLink: created.htmlLink });
   });
 
-  // GET /api/calendar/status — check if calendar is connected
   app.get("/api/calendar/status", async (req, reply) => {
     try {
       const payload = await req.jwtVerify<{ userId: string }>();

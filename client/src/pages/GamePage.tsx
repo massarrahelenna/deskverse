@@ -34,7 +34,6 @@ export function GamePage() {
   const inMusicRoom = currentZoneId === MUSIC_ZONE;
   const musicZoneMusic = zoneMusicMap[MUSIC_ZONE] ?? null;
 
-  // Connect WebSocket + wire stores
   useEffect(() => {
     const { name, avatarSkin, shirtIndex, hairColor, accessory, pantsColor } = usePlayerStore.getState();
     SocketManager.connect(name, avatarSkin, shirtIndex, hairColor, accessory, pantsColor);
@@ -46,8 +45,6 @@ export function GamePage() {
           players.filter((p) => p.id !== myId),
           zones
         );
-        // Reset zone detection so re-entry events fire after a WS reconnect
-        // (server clears occupancy on disconnect; client must re-send ZONE_ENTER)
         gameRef.current?.resetZoneDetector();
       },
       (player) => {
@@ -97,7 +94,6 @@ export function GamePage() {
     };
   }, []);
 
-  // PixiJS canvas setup
   useEffect(() => {
     if (!canvasRef.current) return;
 

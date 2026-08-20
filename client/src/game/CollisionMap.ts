@@ -34,8 +34,6 @@ export class CollisionMap {
     return this.data[tileY * this.width + tileX] === 1;
   }
 
-  // Check if a world-pixel bounding box collides with any solid tile.
-  // Uses a small margin so the player doesn't get stuck on tile edges.
   wouldCollide(
     worldX: number,
     worldY: number,

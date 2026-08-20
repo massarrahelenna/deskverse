@@ -18,7 +18,6 @@ export async function upsertUser(
   });
 
   if (existing) {
-    // Update Google tokens when present (re-auth or first time with calendar scope)
     if (googleAccessToken) {
       const [updated] = await db
         .update(users)

@@ -13,7 +13,6 @@ interface Props {
   zoneMusic: ZoneMusic | null;
 }
 
-// ── vinyl store palette ───────────────────────────────────────────────────────
 const V = {
   bg:       "#150E07",
   bgCard:   "#1F1509",
@@ -40,7 +39,6 @@ const panelStyle: React.CSSProperties = {
   zIndex: 200,
 };
 
-// ── vinyl record SVG ──────────────────────────────────────────────────────────
 function VinylIcon({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
@@ -54,14 +52,12 @@ function VinylIcon({ size = 28 }: { size?: number }) {
   );
 }
 
-// ── main component ────────────────────────────────────────────────────────────
 export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
   const { state, playTrack, pause, resume, isAuthenticated } = useSpotify();
   const open          = useUiStore((s) => s.showSpotify);
   const toggleSpotify = useUiStore((s) => s.toggleSpotify);
   const myId          = usePlayerStore((s) => s.id);
 
-  // Auto-sync playback only when inside the music room
   useEffect(() => {
     if (!inMusicRoom || !zoneMusic || !state.connected) return;
     if (!zoneMusic.isPlaying) { pause(); return; }
@@ -77,7 +73,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
 
   return (
     <div style={panelStyle}>
-      {/* ── header ── */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "10px 14px",
@@ -96,7 +91,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
 
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-        {/* ── not configured ── */}
         {!SPOTIFY_CONFIGURED && (
           <div style={{ fontSize: 13, color: V.creamDim, lineHeight: 1.6 }}>
             Adicione{" "}
@@ -107,7 +101,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
           </div>
         )}
 
-        {/* ── not logged in ── */}
         {SPOTIFY_CONFIGURED && !isAuthenticated && (
           <>
             <button
@@ -129,10 +122,8 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
           </>
         )}
 
-        {/* ── logged in ── */}
         {SPOTIFY_CONFIGURED && isAuthenticated && (
           <>
-            {/* location badge */}
             <div style={{
               fontSize: 13, padding: "7px 11px",
               background: inMusicRoom ? "rgba(212,168,83,.12)" : V.bgCard,
@@ -146,7 +137,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
                 : "Vá até a Sala de Música para ouvir ao vivo"}
             </div>
 
-            {/* SDK error */}
             {state.error && (
               <div style={{
                 fontSize: 13, padding: "7px 11px", lineHeight: 1.5,
@@ -158,14 +148,12 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
               </div>
             )}
 
-            {/* SDK connection status (only while connecting, no error) */}
             {!state.connected && !state.error && (
               <div style={{ fontSize: 13, color: V.creamDim }}>
                 Conectando ao Spotify Player…
               </div>
             )}
 
-            {/* currently playing in the room */}
             {zoneMusic ? (
               <div style={{
                 background: V.bgCard, border: `1px solid ${V.border}`,
@@ -193,7 +181,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
               </div>
             )}
 
-            {/* DJ controls — shown when authenticated (not gated by SDK) */}
             <DJControls
               isDJ={isDJ}
               connected={state.connected}
@@ -207,7 +194,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
               }}
             />
 
-            {/* reconnect / logout */}
             <button
               onClick={() => {
                 disconnectSpotify();
@@ -228,7 +214,6 @@ export function SpotifyPanel({ inMusicRoom, zoneMusic }: Props) {
   );
 }
 
-// ── DJ controls ───────────────────────────────────────────────────────────────
 function DJControls({ isDJ, connected, isPlaying, onSetTrack, onToggle }: {
   isDJ: boolean;
   connected: boolean;
@@ -260,7 +245,6 @@ function DJControls({ isDJ, connected, isPlaying, onSetTrack, onToggle }: {
     <>
       <div style={{ borderTop: `1px solid ${V.border}` }} />
 
-      {/* Play/pause — only if DJ and SDK is connected */}
       {isDJ && connected && (
         <button
           onClick={() => onToggle(!isPlaying)}
@@ -276,7 +260,6 @@ function DJControls({ isDJ, connected, isPlaying, onSetTrack, onToggle }: {
         </button>
       )}
 
-      {/* Track input — always shown when authenticated */}
       <form onSubmit={handleSet} style={{ display: "flex", gap: 6 }}>
         <input
           value={input}

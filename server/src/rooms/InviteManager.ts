@@ -16,7 +16,6 @@ export class InviteManager {
     toId: string,
     onExpire: (inviteId: string) => void
   ): InviteState {
-    // One invite per pair at a time — cancel any existing one
     this.cancelByPair(fromId, toId);
 
     const id = randomUUID();

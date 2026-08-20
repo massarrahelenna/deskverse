@@ -82,15 +82,12 @@ describe("RoomManager — status", () => {
   it("ausência após 10 minutos sem movimento", () => {
     addPlayer(manager, "a", "Ana");
     vi.advanceTimersByTime(10 * 60 * 1000 + 100);
-    // After absence timeout, next broadcast should include ausente
     manager.updatePosition("a", 240, 420, "down", "idle");
-    // Should now be livre again
     const sB = addPlayer(manager, "b", "Bruno");
     const msgs = sentMessages(sB);
     const snapshot = msgs.find((m: unknown) => (m as { type: string }).type === "PLAYERS_SNAPSHOT") as {
       players: { id: string; status: string }[];
     } | undefined;
-    // A should be back to livre after movement
     const playerA = snapshot?.players.find((p) => p.id === "a");
     expect(playerA?.status).toBe("livre");
   });
