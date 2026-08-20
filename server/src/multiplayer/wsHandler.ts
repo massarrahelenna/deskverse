@@ -3,6 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import type { ClientEvent } from "../../shared/events/index.js";
 import type { RoomManager } from "../rooms/RoomManager.js";
 import { persistMessage } from "../routes/messages.js";
+import { persistChatMessage, getRecentChat } from "../routes/chat.js";
 import { ZoneMusicManager } from "../spotify/ZoneMusicManager.js";
 
 interface JoinQuery {
@@ -58,6 +59,21 @@ export function createWsHandler(_app: FastifyInstance, roomManager: RoomManager)
         socket.send(JSON.stringify({ type: "ZONE_MUSIC", zoneId, music }));
       }
     }
+
+    getRecentChat().then((msgs) => {
+      if (socket.readyState === 1) {
+        socket.send(JSON.stringify({
+          type: "CHAT_HISTORY",
+          messages: msgs.map((m) => ({
+            id:         m.id,
+            playerId:   m.senderId,
+            playerName: m.playerName,
+            content:    m.content,
+            sentAt:     m.createdAt.toISOString(),
+          })),
+        }));
+      }
+    }).catch(console.error);
 
     socket.on("message", (raw: Buffer) => {
       let event: ClientEvent;
@@ -146,16 +162,16 @@ export function createWsHandler(_app: FastifyInstance, roomManager: RoomManager)
           break;
         }
 
+        case "STATUS_SET":
+          roomManager.setStatusManual(playerId, event.status);
+          break;
+
         case "CHAT_SEND": {
           const content = event.content.trim().slice(0, 200);
           if (!content) break;
-          roomManager.broadcast({
-            type:       "CHAT_MESSAGE",
-            playerId,
-            playerName: name,
-            content,
-            sentAt:     new Date().toISOString(),
-          });
+          const sentAt = new Date().toISOString();
+          roomManager.broadcast({ type: "CHAT_MESSAGE", playerId, playerName: name, content, sentAt });
+          persistChatMessage(playerId, name, content).catch(console.error);
           break;
         }
 

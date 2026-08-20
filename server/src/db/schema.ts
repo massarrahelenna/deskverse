@@ -22,5 +22,14 @@ export const messages = pgTable("messages", {
   createdAt:  timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export type User    = typeof users.$inferSelect;
-export type Message = typeof messages.$inferSelect;
+export const chatMessages = pgTable("chat_messages", {
+  id:         uuid("id").primaryKey().defaultRandom(),
+  senderId:   uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  playerName: varchar("player_name", { length: 100 }).notNull(),
+  content:    text("content").notNull(),
+  createdAt:  timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type User        = typeof users.$inferSelect;
+export type Message     = typeof messages.$inferSelect;
+export type ChatMessage = typeof chatMessages.$inferSelect;

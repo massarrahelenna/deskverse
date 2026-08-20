@@ -89,6 +89,11 @@ export interface ClientChatSend {
   content: string;
 }
 
+export interface ClientStatusSet {
+  type:   "STATUS_SET";
+  status: "ausente" | "livre";
+}
+
 export type ClientEvent =
   | ClientPlayerJoin
   | ClientPlayerMove
@@ -104,7 +109,8 @@ export type ClientEvent =
   | ClientRecadosSeen
   | ClientSpotifySetTrack
   | ClientSpotifyToggle
-  | ClientChatSend;
+  | ClientChatSend
+  | ClientStatusSet;
 
 // ──────────────────────────────────────────────
 // Events sent FROM server TO client
@@ -206,6 +212,11 @@ export interface ServerChatMessage {
   sentAt:     string;
 }
 
+export interface ServerChatHistory {
+  type:     "CHAT_HISTORY";
+  messages: { id: string; playerId: string; playerName: string; content: string; sentAt: string }[];
+}
+
 export interface ServerError {
   type: "ERROR";
   message: string;
@@ -228,4 +239,5 @@ export type ServerEvent =
   | ServerRecadosPending
   | ServerZoneMusic
   | ServerChatMessage
+  | ServerChatHistory
   | ServerError;

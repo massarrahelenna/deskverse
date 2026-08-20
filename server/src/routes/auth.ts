@@ -1,4 +1,7 @@
 import type { FastifyInstance } from "fastify";
+import { eq } from "drizzle-orm";
+import { db } from "../db/client.js";
+import { users } from "../db/schema.js";
 import { upsertUser, findUserById } from "../auth/helpers.js";
 
 const GOOGLE_AUTH_URL  = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -124,6 +127,24 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         avatarUrl:   user.avatarUrl,
         email:       user.email,
       });
+    } catch {
+      return reply.status(401).send({ error: "unauthenticated" });
+    }
+  });
+
+  app.patch("/api/me", async (req, reply) => {
+    try {
+      const payload = await req.jwtVerify<{ userId: string }>();
+      const { displayName } = req.body as { displayName?: string };
+      if (!displayName?.trim()) return reply.status(400).send({ error: "invalid" });
+      const name = displayName.trim().slice(0, 100);
+      const [updated] = await db
+        .update(users)
+        .set({ displayName: name })
+        .where(eq(users.id, payload.userId))
+        .returning();
+      if (!updated) return reply.status(404).send({ error: "not found" });
+      return reply.send({ id: updated.id, displayName: updated.displayName, avatarUrl: updated.avatarUrl, email: updated.email });
     } catch {
       return reply.status(401).send({ error: "unauthenticated" });
     }

@@ -20,12 +20,28 @@ import { ErrorToast } from "../components/ErrorToast";
 import { SpotifyPanel } from "../components/SpotifyPanel";
 import { ChatPanel } from "../components/ChatPanel";
 import { CalendarEventModal } from "../components/CalendarEventModal";
+import { ProfilePanel } from "../components/ProfilePanel";
+
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+function showRecadoNotification(fromName: string) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("DeskVerse — Novo recado", {
+      body: `${fromName} deixou um recado para você.`,
+    });
+  }
+}
 
 export function GamePage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<GameLoop | null>(null);
   const [zoneMusicMap, setZoneMusicMap] = useState<Record<string, ZoneMusic>>({});
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [gameReady, setGameReady] = useState(false);
 
   const MUSIC_ZONE = "musica";
   const myId = usePlayerStore((s) => s.id);
@@ -35,6 +51,8 @@ export function GamePage() {
   const musicZoneMusic = zoneMusicMap[MUSIC_ZONE] ?? null;
 
   useEffect(() => {
+    requestNotificationPermission();
+
     const { name, avatarSkin, shirtIndex, hairColor, accessory, pantsColor } = usePlayerStore.getState();
     SocketManager.connect(name, avatarSkin, shirtIndex, hairColor, accessory, pantsColor);
 
@@ -72,7 +90,10 @@ export function GamePage() {
       (_convId) => useConversationStore.getState().setConversation(null),
       (prompt) => useConversationStore.getState().setZonePrompt(prompt),
       (zone) => useWorldStore.getState().updateZoneState(zone),
-      (messages) => useConversationStore.getState().setPendingRecados(messages),
+      (messages) => {
+        useConversationStore.getState().setPendingRecados(messages);
+        if (messages.length > 0) showRecadoNotification(messages[0].fromName);
+      },
       (msg) => useConversationStore.getState().setError(msg),
       (zoneId, music) => {
         setZoneMusicMap((prev) => ({ ...prev, [zoneId]: music as ZoneMusic }));
@@ -85,6 +106,11 @@ export function GamePage() {
         } else {
           gameRef.current?.showRemoteChatBubble(playerId, content);
         }
+      },
+      (messages) => {
+        useChatStore.getState().loadHistory(
+          messages.map((m) => ({ ...m, isLocal: false }))
+        );
       },
     );
 
@@ -130,7 +156,10 @@ export function GamePage() {
         window.removeEventListener("resize", handleResize);
         game.destroy();
         app.destroy(true);
+        return;
       }
+
+      setGameReady(true);
     })();
 
     return () => {
@@ -144,6 +173,21 @@ export function GamePage() {
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden" }}>
       <div ref={canvasRef} style={{ width: "100%", height: "100%" }} />
+
+      {!gameReady && (
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#6DA34D",
+          fontFamily: "'Pixelify Sans', monospace",
+          color: "#E9D0A0",
+          fontSize: 20,
+          zIndex: 999,
+        }}>
+          Carregando escritório…
+        </div>
+      )}
+
       <StatusBar onOpenCalendar={() => setCalendarOpen(true)} />
       <PeoplePanel />
       <ProximityPrompt />
@@ -155,6 +199,7 @@ export function GamePage() {
       <ErrorToast />
       <SpotifyPanel inMusicRoom={inMusicRoom} zoneMusic={musicZoneMusic} />
       <ChatPanel />
+      <ProfilePanel />
       {calendarOpen && <CalendarEventModal onClose={() => setCalendarOpen(false)} />}
     </div>
   );

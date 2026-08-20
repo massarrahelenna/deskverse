@@ -174,6 +174,20 @@ export class RoomManager {
     this.setStatus(playerId, status);
   }
 
+  setStatusManual(playerId: string, status: "ausente" | "livre"): void {
+    const player = this.players.get(playerId);
+    if (!player) return;
+    const current = player.state.status;
+    if (current === "em_reuniao" || current === "em_foco" || current === "em_descanso") return;
+    this.setStatus(playerId, status);
+    if (status === "ausente") {
+      if (player.absenceTimer) clearTimeout(player.absenceTimer);
+      player.absenceTimer = null;
+    } else {
+      this.resetAbsenceTimer(playerId);
+    }
+  }
+
   toggleFocus(playerId: string, enable: boolean): void {
     const player = this.players.get(playerId);
     if (!player) return;

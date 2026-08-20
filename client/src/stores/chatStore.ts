@@ -13,9 +13,10 @@ interface ChatState {
   messages: ChatMessage[];
   open: boolean;
   unread: number;
-  addMessage: (msg: Omit<ChatMessage, "id">) => void;
-  toggleOpen: () => void;
-  markRead: () => void;
+  addMessage:  (msg: Omit<ChatMessage, "id">) => void;
+  loadHistory: (msgs: Omit<ChatMessage, "id">[]) => void;
+  toggleOpen:  () => void;
+  markRead:    () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -30,6 +31,11 @@ export const useChatStore = create<ChatState>((set) => ({
         { ...msg, id: `${Date.now()}-${Math.random()}` },
       ],
       unread: s.open ? 0 : s.unread + 1,
+    })),
+
+  loadHistory: (msgs) =>
+    set(() => ({
+      messages: msgs.map((m, i) => ({ ...m, id: `hist-${i}-${m.sentAt}` })),
     })),
 
   toggleOpen: () =>

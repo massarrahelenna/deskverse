@@ -1,6 +1,18 @@
 import { config } from "dotenv";
 config({ path: "../.env" });
 
+const REQUIRED_ENV = [
+  "DATABASE_URL", "JWT_SECRET",
+  "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+  "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
+];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`[config] variável de ambiente obrigatória não definida: ${key}`);
+    process.exit(1);
+  }
+}
+
 import Fastify from "fastify";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyCors from "@fastify/cors";
@@ -20,7 +32,7 @@ const app = Fastify({ logger: { level: "info" } });
 
 await app.register(fastifyCors, {
   origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PATCH"],
   credentials: true,
 });
 

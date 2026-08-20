@@ -123,6 +123,27 @@ function SpotifyIcon() {
   );
 }
 
+function AusenteIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 13 13" width={22} height={22} shapeRendering="crispEdges" fill={active ? "#9e9e9e" : "currentColor"} aria-hidden>
+      <rect x="4" y="0" width="5" height="5"/>
+      <rect x="2" y="5" width="9" height="6"/>
+      <rect x="0" y="7" width="13" height="1" fill={active ? "#9e9e9e" : C.parch}/>
+      <rect x="1" y="11" width="4" height="2"/>
+      <rect x="8" y="11" width="4" height="2"/>
+    </svg>
+  );
+}
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 11 13" width={22} height={22} shapeRendering="crispEdges" fill="currentColor" aria-hidden>
+      <rect x="3" y="0" width="5" height="5"/>
+      <rect x="1" y="6" width="9" height="7"/>
+    </svg>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 14 14" width={22} height={22} shapeRendering="crispEdges" fill="currentColor" aria-hidden>
@@ -146,22 +167,26 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ onOpenCalendar }: StatusBarProps) {
-  const name          = usePlayerStore((s) => s.name);
-  const status        = usePlayerStore((s) => s.status);
-  const shirtIndex    = usePlayerStore((s) => s.shirtIndex);
-  const totalOnline   = useWorldStore((s) => Object.keys(s.remotePlayers).length + 1);
-  const showPeople    = useUiStore((s) => s.showPeople);
-  const showAbout     = useUiStore((s) => s.showAbout);
-  const showSpotify   = useUiStore((s) => s.showSpotify);
-  const togglePeople  = useUiStore((s) => s.togglePeople);
-  const toggleAbout   = useUiStore((s) => s.toggleAbout);
-  const toggleSpotify = useUiStore((s) => s.toggleSpotify);
-  const chatOpen      = useChatStore((s) => s.open);
-  const chatUnread    = useChatStore((s) => s.unread);
-  const toggleChat    = useChatStore((s) => s.toggleOpen);
+  const name           = usePlayerStore((s) => s.name);
+  const status         = usePlayerStore((s) => s.status);
+  const shirtIndex     = usePlayerStore((s) => s.shirtIndex);
+  const totalOnline    = useWorldStore((s) => Object.keys(s.remotePlayers).length + 1);
+  const showPeople     = useUiStore((s) => s.showPeople);
+  const showAbout      = useUiStore((s) => s.showAbout);
+  const showSpotify    = useUiStore((s) => s.showSpotify);
+  const showProfile    = useUiStore((s) => s.showProfile);
+  const togglePeople   = useUiStore((s) => s.togglePeople);
+  const toggleAbout    = useUiStore((s) => s.toggleAbout);
+  const toggleSpotify  = useUiStore((s) => s.toggleSpotify);
+  const toggleProfile  = useUiStore((s) => s.toggleProfile);
+  const chatOpen       = useChatStore((s) => s.open);
+  const chatUnread     = useChatStore((s) => s.unread);
+  const toggleChat     = useChatStore((s) => s.toggleOpen);
 
   const isFocused      = status === "em_foco";
+  const isAusente      = status === "ausente";
   const canToggleFocus = status === "livre" || status === "em_foco";
+  const canToggleAusente = status === "livre" || status === "ausente";
 
   const SHIRT_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#a855f7", "#f97316"];
   const avatarColor  = SHIRT_COLORS[shirtIndex] ?? C.amber;
@@ -238,6 +263,16 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
             <CalendarIcon />
           </button>
         )}
+
+        {canToggleAusente && (
+          <button
+            style={{ ...iconBtn, background: isAusente ? "#e0e0e0" : C.parch2 }}
+            title={isAusente ? "Voltar como disponível" : "Marcar como ausente"}
+            onClick={() => SocketManager.sendStatusSet(isAusente ? "livre" : "ausente")}
+          >
+            <AusenteIcon active={isAusente} />
+          </button>
+        )}
       </div>
 
       {canToggleFocus && (
@@ -268,6 +303,14 @@ export function StatusBar({ onOpenCalendar }: StatusBarProps) {
         position: "fixed", top: 14, right: 14,
         display: "flex", gap: 8, alignItems: "stretch", zIndex: 200,
       }}>
+        <button
+          style={{ ...iconBtn, background: showProfile ? C.parch : C.parch2 }}
+          title="Perfil"
+          onClick={toggleProfile}
+        >
+          <ProfileIcon />
+        </button>
+
         <div style={{
           ...iconBtn,
           width: "auto",

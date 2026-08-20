@@ -155,6 +155,10 @@ class SocketManagerClass {
   sendChat(content: string): void {
     this.send({ type: "CHAT_SEND", content });
   }
+
+  sendStatusSet(status: "ausente" | "livre"): void {
+    this.send({ type: "STATUS_SET", status });
+  }
 }
 
 export const SocketManager = new SocketManagerClass();
@@ -179,6 +183,7 @@ export function wireSocketToStores(
   onError: (msg: string) => void,
   onZoneMusic: (zoneId: string, music: import("@shared/types").ZoneMusic | null) => void,
   onChatMessage: (playerId: string, playerName: string, content: string, sentAt: string) => void,
+  onChatHistory: (messages: { id: string; playerId: string; playerName: string; content: string; sentAt: string }[]) => void,
 ): () => void {
   return SocketManager.addHandler((event) => {
     switch (event.type) {
@@ -198,6 +203,7 @@ export function wireSocketToStores(
       case "RECADOS_PENDING": onRecadosPending(event.messages); break;
       case "ZONE_MUSIC": onZoneMusic(event.zoneId, event.music); break;
       case "CHAT_MESSAGE": onChatMessage(event.playerId, event.playerName, event.content, event.sentAt); break;
+      case "CHAT_HISTORY": onChatHistory(event.messages); break;
       case "ERROR": onError(event.message); break;
     }
   });
